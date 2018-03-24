@@ -1,0 +1,159 @@
+---
+title: "Notes - Statistical Rethinking"
+author: "Benjamin Wee"
+date: "10/03/2018"
+output: pdf_document
+---
+
+## Lecture 01
+
+Need to understand the internal processes of a model to use them properly. Construction from bottom up.
+
+Eventually you will make a statistical model which will misbehave. But it will only misbehave according to your expectations. It is behaving *exactly* according to its design.
+
+We construct models to do things which are difficult for us. We design them to be good at things we are bad at. But they are fantastically bad at the things people find easy. They are blind to our intentions. 
+
+"Animated by truth"
+
+Frequentist tests are made for experimental designs (or factorial design models?).  
+
+Flasifying null models are insufficient for understanding how the world works.
+
+"Statistical expectation" 
+
+Bayesian inference lays bare all the imperfections of logical inference.
+
+Information critera are a cross validation metric
+
+Anything which looks random to you is because you can't predict the outcome. Ignorance in the face of uncertainty.
+
+Everything in Bayes is pseudo random, there is a deterministic process (probability distributions which produce random numbers). We taught computers to generate pseudo random numbers (we taught them a deterministic way to generate "randomness")
+
+Propositional logic. What is a valid deduction. Bayes extends this to continuous logic.
+
+We want to understand "the golem's belief", not the scientist's.
+
+Bayesian stats -> Laplacian stats. Father of applied stats. Epistemic rather than ontological. 
+
+Coins themselves are not random. Our inability to predict their side which makes them random. They are a good randomisation device.
+
+FLipping coins fairly is a chaotic system. So sensitive to initial conditions that they appear unpredictable, and hence randoom.
+
+randomness is a property of bugs in our knowldege.
+
+Based on our assumptions/conjecture, how different ways could we observe the data?
+
+Probability is merely counting the number of ways the data could appear given our conjecture GIVEN all the POSSIBLE paths that could be generated from our conjecture. This is where the multiplication rule of probability comes from. We are multiplying all the possible "paths" of observing the data from our assumptions (an efficient way of counting). 
+
+## Lecture 02
+
+Extension of propositional logic to continuous probability
+
+```{r}
+# Counts to probability
+ways <- c(3 ,8, 9)
+ways/sum(ways)
+```
+
+Probability is just a shortcut for counting probabilties. It cannot tell us what is true, nothing can. It's simply, make some assumptions, and see what the logical consequences are. 
+
+Applied statistics as a type of engineering. Building a bridge across a river of ignorance. 
+
+*Design > Condition > Evaluate*
+Story of the small world, executing in the small world, does the model make sense? 
+
+Translating data story into probabilty statements:
+
+1) Law of Total Probability: Make sure the probabilities sum to 1
+Two to remember to construct things:
+2) Sum rule: Things that are alternative: add
+3) Product rule: Things that happen together: multiply
+
+The prior and posterior are one in the same. The prior summarises all the past datapoints AND the sample size. May want the raw data IF you want to fit a different model. Other models may find other relevant information.
+
+Bayesian learning is optimal in our small world. Counting up the logical ways data could arise. 
+
+Bayes: Translate a prior state of information (before data arrives) into posterior state of information (after data arrives)
+
+Prior: We have prior counts of the plausibilities of each conjecture (e.g. philisophy or previous data). What is the logical change of belief. 
+Prior: assigning information states. Joint prior over data and parameters. 
+Prior predictive distribution. Idea of simulated dataset. Terrible predictions before you got data. **This is the way to know what the prior actually means**
+
+Posterior predictive distribution: hopefully better predictions after data is observed. Good way to test what the golem thinks its learned from the data.
+
+Density: "Rate of change" -- It's continuous. Relative values matters, not absolute.
+
+Overfitting - Need to build in conservatism into golems. Otherwise it will think the sample is "everything"
+
+Prior as a state of information, there's no "true" prior. Important to embody your golem with information it to guard against *inferential risk*. Truth isn't what's relevant here. It's the risk of taking action from the model that matters.
+
+$$
+Posterior = \frac{Likelihood \times prior}{Average\space Likelihood}
+$$
+
+Where the average likelihood normalises the posterior so that it integrates to 1. The posterior is the *standardised product of the likelihood and proior
+
+
+
+## Textbook Code
+
+### Chapter 2
+
+```{r}
+# Page 40
+# Define Grid
+p_grid <- seq(from = 0, to =1, length.out = 20)
+
+# Define prior
+#prior <- rep(1, 20)
+prior <- ifelse(p_grid<0.5, 0, 1)
+#prior <- exp(-5*abs(p_grid - 0.5))
+
+# Compute likelihood at each value in grid
+likelihood <- dbinom(6, size = 9, prob = p_grid)
+
+# Compute product of likelihood and prior
+unstd.posterior <- likelihood * prior
+
+# Standardise the posterior so it sums to 1
+posterior <- unstd.posterior / sum(unstd.posterior)
+
+# Visualise posterior
+plot( p_grid , posterior , type="b" ,
+xlab="probability of water" , ylab="posterior probability" )
+mtext( "20 points" )
+
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Page 42
+library(rethinking)
+globe.qa <- map(
+  alist(
+    w ~ dbinom(9, p), # Binomial Likelihood
+    p ~ dunif(0,1)    # Uniform Prior
+  ),
+  data = list(w = 6)
+)
+
+# Display summary of quadratic approximation
+precis(globe.qa)
+```
+```{r}
+# Page 43
+# Analytical Calculation
+w <- 6
+n <- 9
+curve(dbeta(x, w+1, n-w+1), from = 0, to = 1)
+
+# Quadratic approximation
+curve(dnorm(x, 0.67, 0.16), lty = 2, add = TRUE)
+```
+
+### Chapter 3 Sampling the imaginary
+
+```{r}
+# Page 49
+# Conditional Probability Calculation
+```
+
