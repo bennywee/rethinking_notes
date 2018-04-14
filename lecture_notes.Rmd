@@ -93,8 +93,6 @@ $$
 
 Where the average likelihood normalises the posterior so that it integrates to 1. The posterior is the *standardised product of the likelihood and proior
 
-
-
 ## Textbook Code
 
 ### Chapter 2
@@ -155,5 +153,6 @@ curve(dnorm(x, 0.67, 0.16), lty = 2, add = TRUE)
 ```{r}
 # Page 49
 # Conditional Probability Calculation
+
 ```
 
