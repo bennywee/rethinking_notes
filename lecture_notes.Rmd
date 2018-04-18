@@ -149,10 +149,76 @@ curve(dnorm(x, 0.67, 0.16), lty = 2, add = TRUE)
 ```
 
 ### Chapter 3 Sampling the imaginary
-
+#### 3.1 Sampling from a grid-approximate posterior
 ```{r}
 # Page 49
 # Conditional Probability Calculation
 
+PrPV <- 0.95
+PrPM <- 0.01
+PrV <- 0.001
+PrP <- PrPV*PrV + PrPM*(1-PrV)
+( PrVP <- PrPV*PrV / PrP )
 ```
+
+```{r}
+# Page 52
+# Sampling from a grid approximate posterior
+p_grid <- seq( from=0 , to=1 , length.out=1000 )
+prior <- rep( 1 , 1000 )
+likelihood <- dbinom( 6 , size=9 , prob=p_grid )
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+
+samples <- sample( p_grid , prob=posterior , size=1e4 , replace=TRUE)
+plot(samples)
+
+# Density approximiation of samples
+library(rethinking)
+dens(samples)
+```
+
+#### 3.2 Sampling to summarise
+
+```{r}
+# add up posterior probability where p < 0.5
+sum(posterior[ p_grid < 0.5 ]) # So about 17% of posterior probability is under 0.5
+```
+
+```{r}
+# Performing same calculation from samples of the posterior
+sum(samples<0.5) / 1e4 # About the same
+```
+
+```{r}
+# See how much probability is between 0.5 and 0.75
+sum( samples > 0.5 & samples < 0.75 ) / 1e4
+```
+
+
+Ontological - Knowledge that we observe
+Epistemological - Knowledge that we build/create
+
+Normality by addition
+
+Normality by multiplication
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
