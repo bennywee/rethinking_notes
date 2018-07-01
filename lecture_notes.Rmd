@@ -1,7 +1,7 @@
 ---
 title: "Notes - Statistical Rethinking"
 author: "Benjamin Wee"
-date: "10/03/2018"
+ 
 output: pdf_document
 ---
 
@@ -411,12 +411,80 @@ Can also consider distributions of longest run of waters or number of switches w
 
 Models are always wrong, in some sense *mis-specified*. But whether the mis-specification should lead us to try other models will depend on our specific interests.
 
-## Chapter 4 Lnear models
+## Chapter 4 Linear models
+
+Linear regression is a descriptive model that corresponds to many different process models. Not universally useful, but a strong claim to being foundational. Once you learn to build and interpret linear regression models, you can quickly move on to other types of regressions which are less normal
+
+### 4.1 Why are normal distributions normal
+
+#### 4.1.1 Normal by addition
+
+```{r}
+# R code 4.1
+# Simulating coin flipping. Heads/tails -> +1/-1 step from the centre of a football pitch. 
+
+# Simulate 1000 random variables. 16 steps. Final position looks normally distributed.
+pos <- replicate(1000 , sum( runif(16, -1, 1)))
+hist(pos)
+plot(density(pos))
+```
+
+*Any process that adds together random values from the same distribution converges to normal*
+
+Conceptually, whatever the average calue of the source distribution, each sample can be thought of as a fluctuation from that average value. When we add these values together, they start to cancel each other out. A large positive fluctuation will cancel a large negative one. The more we sum, the more chances for each deviaion from this mean will be canclled out. 
+
+This holds for any distribution (in general). *Technically*, the distribution of sums converges to normal when the original distribution has finite variance. Practically, this means the magnitude of a newly sampled value cannot be so big as to overwhelm the previous values. 
+
+#### 4.1.2. Normal by multiplication
+
+```{r}
+# R code 4.2
+# Taking the product of growth rates
+prod(1 + runif(12, 0, 0.1))
+```
+
+
+```{r}
+# R code 4.3
+# Repeat this 10,000 times
+growth <- replicate( 10000 , prod( 1 + runif(12,0,0.1) ) )
+dens( growth , norm.comp=TRUE ) # Approximately normal
+```
+
+
+Multiplying small numbers is approximately the same as addition
+
+$$
+1.1\times1.1 = 1.21 \\
+1.1\times1.1 = (1 + 0.1)(1 + 0.1) = 1 + 0.2 + 0.01 \approx 1.2
+$$
+
+THe smaller the growth rate, the better the additive approximation will be. Small effects that multiply together are approximately additive,so they tend to stabilise on Gaussian distributions.
+
+```{r}
+# R code 4.4
+# Small is a better approximation of the normal distribution
+big <- replicate( 10000 , prod( 1 + runif(12,0,0.5) ) )
+small <- replicate( 10000 , prod( 1 + runif(12,0,0.01) ) )
+dens(big , norm.comp=TRUE)
+dens(small , norm.comp=TRUE)
+```
+
+#### 4.1.3. Normal by log-multiplication
+Large deviates that are multiplied together tend to produce Gaussian distributions on the log scale.
+
+```{r}
+# R code 4.5
+log.big <- replicate(10000, log(prod(1 + runif(12, 0, 0.5))))
+dens(log.big, norm.comp = TRUE)
+```
+
+#### 4.1.4. Using Gaussian distributions - Ontological and Epistemological justification
+
+##### 4.1.4.1 Ontological justification
+
 Ontological - Knowledge that we observe
 Epistemological - Knowledge that we build/create
-
-Normality by addition
-Normality by multiplication
 
 
 # Quotes
