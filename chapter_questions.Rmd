@@ -1,0 +1,10 @@
+---
+title: "Chapter Questions"
+author: "Benjamin Wee"
+date: "05/08/2018"
+output: pdf_document
+---
+
+# Chapter 3
+
+### Easy
