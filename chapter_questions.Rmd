@@ -4,7 +4,160 @@ author: "Benjamin Wee"
 date: "05/08/2018"
 output: pdf_document
 ---
+```{r}
+library(rethinking)
+```
 
 # Chapter 3
 
-### Easy
+```{r}
+p_grid <- seq(from=0, to=1, length.out=1000)
+prior <- rep(1, 1000)
+likelihood <- dbinom(6, size = 9, prob = p_grid)
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+set.seed(100)
+samples <- sample(p_grid, prob=posterior, size=1e4, replace=TRUE)
+```
+
+## Easy
+
+### 3E1
+```{r}
+sum(posterior[p_grid < 0.2])
+sum(samples < 0.2) / 1e4
+```
+
+### 3E2
+```{r}
+sum(posterior[p_grid > 0.8])
+sum(samples > 0.8) / 1e4
+```
+
+### 3E3
+```{r}
+sum(posterior[p_grid > 0.2 & p_grid < 0.8])
+sum(samples > 0.2 & samples < 0.8) / 1e4
+```
+### 3E4
+```{r}
+quantile(samples, 0.2)
+```
+
+### 3E5
+```{r}
+quantile(samples, 0.8)
+
+```
+
+### 3E6
+```{r}
+HPDI(samples, prob = 0.66)
+```
+
+### 3E7
+```{r}
+PI(samples, prob = 0.66)
+```
+
+## Medium
+
+### 3M1
+```{r}
+p_grid <- seq(from=0, to=1, length.out=1000)
+prior <- rep(1, 1000)
+likelihood <- dbinom(8, size = 15, prob = p_grid)
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+set.seed(100)
+samples <- sample(p_grid, prob=posterior, size=1e4, replace=TRUE)
+```
+
+
+
+### 3M2
+```{r}
+HPDI(samples, prob = 0.9)
+```
+
+### 3M3
+```{r}
+w <- rbinom(1e4, size = 15, prob = samples)
+table(w)[9] / 1e4 # Proportion ('probability') of 8 waters from 1e4 draws of size 15 each.
+```
+
+### 3M4
+```{r}
+w <- rbinom(1e4, size = 9, prob = samples)
+table(w)[7] / 1e4
+```
+
+### 3M5
+```{r}
+prior <- c(rep(0, 500), rep(1, 500)) # Puts basically zero probability on proportion of water = 0
+likelihood <- dbinom(8, size = 15, prob = p_grid)
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+set.seed(100)
+samples <- sample(p_grid, prob=posterior, size=1e4, replace=TRUE)
+
+HPDI(samples, prob = 0.9)
+
+w <- rbinom(1e4, size = 15, prob = samples)
+table(w)[8] / 1e4 # No samples of 0, so indexing changesrelative to ## 3M3
+
+w <- rbinom(1e4, size = 9, prob = samples)
+table(w)[7] / 1e4
+```
+
+
+## Hard
+```{r}
+data(homeworkch3)
+```
+### 3H1
+```{r}
+p_grid <- seq(from = 0, to = 1, length.out = 1000)
+prior <- rep(1, 1000)
+likelihood <- dbinom((sum(birth1) + sum(birth2)), size = 200, prob = p_grid)
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+
+plot(posterior ~ p_grid, type = "l")
+```
+
+### 3H2
+```{r}
+set.seed(100)
+samples <- sample(p_grid, prob=posterior, size=1e4, replace=TRUE)
+
+HPDI(samples, prob = 0.5)
+HPDI(samples, prob = 0.89)
+HPDI(samples, prob = 0.97)
+
+```
+
+### 3H3
+```{r}
+w <- rbinom(1e4, size = 200, prob = samples)
+boys_born = sum(birth1 + birth2)
+dens(w, adj = 0.1)
+abline(v = boys_born, col = "red")
+```
+
+### 3H4
+```{r}
+w <- rbinom(1e4, size = 100, prob = samples)
+dens(w, adj = 0.1)
+abline(v = sum(birth1), col = "blue") # Does not fit number of boys in birth1 well (not represented on scale)
+```
+
+### 3H5
+```{r}
+# Number of second birth boys given first birth was a girl
+births_after_girls <- length(birth2[birth1 == 0]) # 49 second births after female first birth
+posterior_predictive_distribution <- rbinom(1e4, size = births_after_girls, prob = samples)
+dens(posterior_predictive_distribution, adj = 0.1)
+abline(v = sum(birth2[birth1 == 0]), col = "blue") # Posterior predictive distribution does not capture observed count of boys following girls well. Why?
+```
+
