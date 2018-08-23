@@ -158,6 +158,6 @@ abline(v = sum(birth1), col = "blue") # Does not fit number of boys in birth1 we
 births_after_girls <- length(birth2[birth1 == 0]) # 49 second births after female first birth
 posterior_predictive_distribution <- rbinom(1e4, size = births_after_girls, prob = samples)
 dens(posterior_predictive_distribution, adj = 0.1)
-abline(v = sum(birth2[birth1 == 0]), col = "blue") # Posterior predictive distribution does not capture observed count of boys following girls well. Why?
+abline(v = sum(birth2[birth1 == 0]), col = "blue") # Posterior predictive distribution does not capture observed count of boys following girls well. The model is built under the assumption that first borns and second borns are independent. However, once we condition on female first borns, the number of second born males exceeds what is broadly expected from the model. This may suggest a correlation between first and second born children, providing evidence against the assumption of independence. 
 ```
 
