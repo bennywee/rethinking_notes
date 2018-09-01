@@ -1,0 +1,846 @@
+---
+title: "Textbook Code"
+author: "Benjamin Wee"
+output: pdf_document
+---
+
+# Textbook Code
+
+## Chapter 2
+
+```{r}
+# Page 40
+# Define Grid
+p_grid <- seq(from = 0, to =1, length.out = 20)
+
+# Define prior
+#prior <- rep(1, 20)
+prior <- ifelse(p_grid<0.5, 0, 1)
+#prior <- exp(-5*abs(p_grid - 0.5))
+
+# Compute likelihood at each value in grid
+likelihood <- dbinom(6, size = 9, prob = p_grid)
+
+# Compute product of likelihood and prior
+unstd.posterior <- likelihood * prior
+
+# Standardise the posterior so it sums to 1
+posterior <- unstd.posterior / sum(unstd.posterior)
+
+# Visualise posterior
+plot( p_grid , posterior , type="b" ,
+xlab="probability of water" , ylab="posterior probability" )
+mtext( "20 points" )
+
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Page 42
+library(rethinking)
+globe.qa <- map(
+  alist(
+    w ~ dbinom(9, p), # Binomial Likelihood
+    p ~ dunif(0,1)    # Uniform Prior
+  ),
+  data = list(w = 6)
+)
+
+# Display summary of quadratic approximation
+precis(globe.qa)
+```
+```{r}
+# Page 43
+# Analytical Calculation
+w <- 6
+n <- 9
+curve(dbeta(x, w+1, n-w+1), from = 0, to = 1)
+
+# Quadratic approximation
+curve(dnorm(x, 0.67, 0.16), lty = 2, add = TRUE)
+```
+
+## Chapter 3 Sampling the imaginary
+
+Bayesian inference is distinguised by a broad view of probability. Not by use of Bayes' therorem.
+
+### 3.1 Sampling from a grid-approximate posterior
+```{r}
+# Page 49
+# Conditional Probability Calculation
+
+PrPV <- 0.95
+PrPM <- 0.01
+PrV <- 0.001
+PrP <- PrPV*PrV + PrPM*(1-PrV)
+( PrVP <- PrPV*PrV / PrP )
+```
+
+```{r}
+# Page 52
+# Sampling from a grid approximate posterior
+p_grid <- seq( from=0 , to=1 , length.out=1000 )
+prior <- rep( 1 , 1000 )
+likelihood <- dbinom( 6 , size=9 , prob=p_grid )
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+
+samples <- sample( p_grid , prob=posterior , size=1e4 , replace=TRUE)
+plot(samples)
+
+# Density approximiation of samples
+library(rethinking)
+dens(samples)
+```
+
+### 3.2 Sampling to summarise
+
+#### 3.2.1. Intervals of defined boundries
+```{r}
+# add up posterior probability where p < 0.5
+sum(posterior[ p_grid < 0.5 ]) # So about 17% of posterior probability is under 0.5
+```
+
+```{r}
+# Performing same calculation from samples of the posterior
+sum(samples<0.5) / 1e4 # About the same
+```
+
+```{r}
+# See how much probability is between 0.5 and 0.75
+sum( samples > 0.5 & samples < 0.75 ) / 1e4
+```
+
+#### 3.2.2. Intervals of defined mass
+
+It's easy to keep track of what's being summarised as long as you pay attention to how the model is defined. We can use sampling to get the boundries of the *lower* 80% posterior probability. 
+
+```{r}
+# R code 3.9
+quantile(samples, 0.8)
+```
+
+Similarly the middle 80% interval lies between the 10th and 90th percentile. Using sampling:
+
+```{r}
+# R code 3.10
+quantile(samples, c(0.1, 0.9))
+```
+
+These are known as **percentile intervals (PI)** -- good for summarising symmertical distributions. They are limited for assymetrical distributions and are _not_ perfect for for supporting inferences about which parameters are consistent with the data.
+
+The posterior distribution is consistent with observing 3 waters in 3 tosses with a uniform prior. This is highly skewed with a maximum boundry balue of $p = 1$. Computing this with grid approximation: 
+
+```{r}
+# R code 3.11 - Grid approximation of posterior + sampling
+p_grid <- seq(from = 0, to = 1, length.out = 1000)
+prior <- rep(1, 1000)
+likelihood <- dbinom(3, size = 3, prob = p_grid)
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+samples <- sample(p_grid, size = 1e4, replace = TRUE, prob = posterior)
+```
+
+Computing the 50% percentile intervals:
+
+```{r}
+# R code 3.12: The interval assigns 25% probability mass above and below the interval.
+PI(samples, prob = 0.5)
+```
+But this example excludes the most probably parameter value, $p = 1$. Therefore, the PI is misleading in describing the shape of this posterior. 
+
+The Highest Posterior Density Interval (HPDI) -- narrowest interval containing the specified probability mass. 
+
+```{r}
+# R code 3.13 - HPDI - smallest interval with 50% probability mass
+HPDI(samples, prob = 0.5)
+```
+
+HPDI has some advantages over PI, but in many cases they are similar. In this case, the intervals are different due to a *highly skewed distribution*. Using different probability masses:
+
+```{r}
+HPDI(samples, prob = 0.8)
+HPDI(samples, prob = 0.95)
+```
+
+Disadvantages of HPDI -- More computationally intensive than PI and greater simulation variance (sensitive to how many samples are drawn from the posterior).
+
+Overall, if the choice of interval type makes a big difference, then we *shouldn't* be using intervals to summarise the posterior. Better of plotting the estimate of the posterior distribution.
+
+#### 3.2.3. Point Estimates
+
+*Maximum a posteriori* (MAP) estimate -- parameter with the highest posterior probability.
+
+```{r}
+# R code 3.14 -- MAP
+p_grid[which.max(posterior)]
+```
+
+You can approximate the point if you have samples from the posterior:
+
+```{r}
+# R code 3.15
+chainmode(samples, adj = 0.01)
+```
+
+Could also report posterior mean and median:
+
+```{r}
+# R code 3.16
+mean(samples)
+median(samples)
+```
+
+But how do we choose between MAP, median and mean?
+
+We could use a **loss function**. This is a rule which gives the cost associated with using any point estimate. *Different loss functions imply different point estimates*. 
+Calculating the loss for any point estimate means using the posterior to average over our uncertainty in the true value. If we arbitrarily choose 0.5 as our point estimate, the *expected loss* will be:
+
+```{r}
+# R code 3.17
+# Sum of posterior probability multiplied by deviation of point estimate from all other possible parameter values of p. This is *averaging* over the uncertainty of the posterior distribution. The posterior in this case gives some probabilistic weight to each parameter value in p_grid, some more or less than others. 
+
+# Goal is to *minimise* this value (minimising the weighted average loss).
+sum(posterior * abs(0.5 - p_grid)) 
+
+# sum(weight_i * abs(point_estimate - parametervalues_i))
+```
+
+We can repeat this calculation for each decision and choose the smallest value. 
+
+```{r}
+# R code 3.18.
+loss <- sapply(p_grid, function(d) sum(posterior*abs(d-p_grid)))
+```
+
+```{r}
+# R code 3.19 - Find parameter value which minimises the loss
+p_grid[which.min(loss)] # same as posterior median in this case. 
+```
+
+In principle, the details of the applied context may demand unique loss functions. Some loss functions may be highly assymetric. Rather, point estimates should help *describe* the shape of the posterior distribution. 
+
+### 3.3 Sampling to simulate predction
+
+ 1) *Model checking* -- Simulating implied observations to check if the model fit is correct and to investigate model behaviour. 
+ 
+ 2) *Software validation* -- Simulate observations under a known model and then attempt to recovr the values of the parameters the data were simulated under. 
+ 
+ 3) *Research design* -- If you can simulate observations from your hypothesis, then you can evaluate whether the research design can b effective. In a narrow sense, this means doing *power analysis*, but the possibilties are much broader. 
+ 
+ 4) *Forecasting* -- Estimates can be used to simulate new predictions, for new cases and future observations. These forecasts can be useful as applied prediction, but also for model criticism and revision.
+
+#### 3.3.1. Dummy Data
+
+A fixed 'true' proportion of water p exists, and that is the target of our inference. 
+So far, our assumptions have allowed us to infer the plausilibilty of each possible value of *p* after observations. Using the same assumptions, we can simulate the observations that the model implies, since the likelihood works in both directions. 
+
+Given a realised observation, the likelihood function says how plausible an observation is. 
+
+Given only the parameters, the likelihood defines a distribution of possible observations that we can sample from -- to simulate observations. 
+
+Therefore, bayesian models are *always* **generative** -- capable of simulating predictions. 
+
+Using a binomial likelihood:
+
+$$
+Pr(w|n,p) = \frac{n!}{w!(n-w)!}p^w(1-p)^{n-w} \\
+n = 2, p = 0.7
+$$
+
+Computing the likelihood:
+
+```{r}
+# R code 3.20
+dbinom(0:2, size = 2, prob = 0.7)
+```
+
+9% chance of observing $w = 0$, 42% chance of observing $w = 1$, 42% chance of $w = 2$. 
+
+Simulating observations from the likelihood:
+
+```{r}
+#R code 3.21
+rbinom(1, size = 2, prob = 0.7)
+
+#R code 3.22
+rbinom(10, size = 2, prob = 0.7)
+```
+
+```{r}
+# R code 3.23
+dummy_w <- rbinom(1e5, size = 2, prob = 0.7)
+table(dummy_w)/1e5
+```
+
+```{r}
+# R code 3.24 -- Extending this to 9 tosses
+dummy_w <- rbinom(1e5, size = 9, prob = 0.7)
+simplehist(dummy_w, xlab = "dummy water count")
+```
+
+#### 3.3.2. Model Checking
+
+Model checking means:
+
+  1) Ensuring model fitting worked correctly
+  2) Evaluating the adequacy of a model for some purpose
+  
+Bayesian models are *generative*: able to simulate observaions and estimate parameters from observations. Once the model is conditioned on data, you can simulate to examine the model's *empirical expectations*.
+
+
+  3.3.2.1. *Did the software work?* -- Check implied predictions and the data used to fit the model (retrodictions). How well does the model reproduce the data used to educate it. There should be *some* but not *exact* correspondence. Otherwise this may suggest something wrong with the software. This is a simple check to catch silly mistakes since there's no sure way to check that the software is working correctly. 
+  
+  3.3.2.2. *Is the model adequate?* -- Looking for aspects of the data that are not described well by the model's expectations. The goal is *not* to test whether the model's assumptions are "true", because all models are false. Rather, the goal is to assess exactly how the model fails to describe the data, as a path towards model comprehension, revision and improvement. 
+  All models will fail in some aspect -- use own judgement and others -- to decide whether particular failure is important or not. 
+  Sample from entire posterior distribution, not just a point estimate. Posterior contains lots of infromation about uncertainty. Stripping this away leads to overconfidence. 
+
+Need to be aware of uncertainty from the implied predictions of the model.
+
+  1) Observation uncertainty -- For each unique parameter value p, there is a unique implied pattern of observations that the model expects. There is uncertainty in the predicted observations, since even if you know p with certainty, you won't know the next globe toss with certainty. 
+  
+  2) Uncertainty about the parameter p. The posterior over p embodies this uncertainty. Since there is uncertainty about p, there is uncertainty about everything that depends upon p.  The uncertainty in p will interact with the sampling variation, when we try to assess what the model tells us about outcomes. 
+  
+We want to *propagate* parameter uncertainty -- carriy it forward -- as we evaluate the implied predictions. For each value of parameter *p*, there is an implied distributions of outcomes. We can average all these predictive distributions together using the posterior probabilities of each value of *p* to get a **posterior predictive distribution**. 
+
+*Posterior predictive distribution* - Compute the sampling distribution of each parameter value p and average over all these predictive distributions together using the posterior probabilities. 
+
+The resulting distributions is for predictions, but it incorperates all of the uncertainty embodied in the posterior distribution for the parameter *p*. As a result, it is honest. 
+
+If you use only a single parameter value to compute implied predictions, say the most probable value at the peak of the distribution, you'd produce an *overconfident distribution of predictions*. This will lead you to believe the model is more consistent with the data than it really is -- predictions will cluster around the obesrvations more tightly. This illusion arises from tossing away uncertainty about the parameters.
+
+To see this:
+
+```{r}
+# R code 3.25
+# Generates 10,000 simulated predictions of 9 globe tosses assuming p = 0.6
+w <- rbinom(1e4, size = 9, prob = 0.6)
+simplehist(w)
+```
+
+```{r}
+# R code 3.26
+# Sampled values appear in proportion to their posterior probabilities -- the resulting simulated observations are averaged over the posterior. 
+w <- rbinom(1e4, size = 9, prob = samples)
+simplehist(w)
+```
+Can also consider distributions of longest run of waters or number of switches within 9 globe tosses.
+
+Models are always wrong, in some sense *mis-specified*. But whether the mis-specification should lead us to try other models will depend on our specific interests.
+
+Correlations/patterns in simulations/sampling may provide poorer inference or less information on the 'true' value? May take longer to converge to correct value.
+
+`Subjective knowledge of an empirical domain provides expertise. Expertise in turn allows for imaginative checks of model performance. Since golems have terrible imaginations, we need the freedom to engage our own imagination. In this way, the objective and subjective work together.` 
+
+## Chapter 4 Linear models
+
+Linear regression is a descriptive model that corresponds to many different process models. Not universally useful, but a strong claim to being foundational. Once you learn to build and interpret linear regression models, you can quickly move on to other types of regressions which are less normal
+
+### 4.1 Why are normal distributions normal
+
+#### 4.1.1 Normal by addition
+
+```{r}
+# R code 4.1
+# Simulating coin flipping. Heads/tails -> +1/-1 step from the centre of a football pitch. 
+
+# Simulate 1000 random variables. 16 steps. Final position looks normally distributed.
+pos <- replicate(1000 , sum( runif(16, -1, 1)))
+hist(pos)
+plot(density(pos))
+```
+
+*Any process that adds together random values from the same distribution converges to normal*
+
+Conceptually, whatever the average calue of the source distribution, each sample can be thought of as a fluctuation from that average value. When we add these values together, they start to cancel each other out. A large positive fluctuation will cancel a large negative one. The more we sum, the more chances for each deviaion from this mean will be canclled out. 
+
+This holds for any distribution (in general). *Technically*, the distribution of sums converges to normal when the original distribution has finite variance. Practically, this means the magnitude of a newly sampled value cannot be so big as to overwhelm the previous values. 
+
+#### 4.1.2. Normal by multiplication
+
+```{r}
+# R code 4.2
+# Taking the product of growth rates
+prod(1 + runif(12, 0, 0.1))
+```
+
+
+```{r}
+# R code 4.3
+# Repeat this 10,000 times
+growth <- replicate( 10000 , prod( 1 + runif(12,0,0.1) ) )
+dens( growth , norm.comp=TRUE ) # Approximately normal
+```
+
+
+Multiplying small numbers is approximately the same as addition
+
+$$
+1.1\times1.1 = 1.21 \\
+1.1\times1.1 = (1 + 0.1)(1 + 0.1) = 1 + 0.2 + 0.01 \approx 1.2
+$$
+
+THe smaller the growth rate, the better the additive approximation will be. Small effects that multiply together are approximately additive,so they tend to stabilise on Gaussian distributions.
+
+```{r}
+# R code 4.4
+# Small is a better approximation of the normal distribution
+big <- replicate( 10000 , prod( 1 + runif(12,0,0.5) ) )
+small <- replicate( 10000 , prod( 1 + runif(12,0,0.01) ) )
+dens(big , norm.comp=TRUE)
+dens(small , norm.comp=TRUE)
+```
+
+#### 4.1.3. Normal by log-multiplication
+Large deviates that are multiplied together tend to produce Gaussian distributions on the log scale.
+
+```{r}
+# R code 4.5
+log.big <- replicate(10000, log(prod(1 + runif(12, 0, 0.5))))
+dens(log.big, norm.comp = TRUE)
+```
+
+#### 4.1.4. Using Gaussian distributions - Ontological and Epistemological justification
+
+##### 4.1.4.1 Ontological justification
+
+Ontological - Knowledge that we observe
+Epistemological - Knowledge that we build/create
+
+### 4.3 A Gaussian Model of Height
+
+```{r}
+# R code 4.7
+library(rethinking)
+data(Howell1)
+d <- Howell1
+
+# 4.8
+str(d)
+```
+
+```{r}
+# R code 4.10
+# Work wit adults first. Height correlated with age before adulthood.
+d2 <- d[d$age >= 18,]
+```
+
+##### 4.3.2. The model
+
+```{r}
+# Plot distribution of heights
+dens(d2$height) # 'Somewhat' gaussian in shape. Height is the sum of many growth factors. Distribution of sums tend to converge to gaussians.
+```
+Becareful when choosing a model's likelihood only when the plotted outcome looks like a particular distribution. A gaussian for example may be a mixture of different gaussian distributions. Might be unable to detect the underlying 'normality' or distribution based on the outcome observed. Justification for gaussian likelihood does not require an empirical distribution to be gaussian.
+
+```{r}
+# R code 4.11
+curve(dnorm(x, 178, 20), from = 100, to = 250)
+
+# R code 4.12
+curve(dnorm(x, 0, 50), from = -10, to = 60)
+```
+The prior choice of $\mu_\sigma$ is the belief with 95% probability that the mean lies within 2 standard deviations of the mean.
+The prior choice of $\sigma$ represents your belief of 95% of observations being within two standard deviations of the mean. 
+```{r}
+# R code 4.13
+sample_mu <- rnorm(1e4, 178, 20) # Moves the centre of the density, wider variation effects the peakedness/tailedness (kurtosis). Higher variation here reduces the height of the mode of the density, putting more weight on the tails
+sample_sigma <- runif(1e4, 0, 50) # Sigma=50 implies 95% of individual heights lie within 100 cm of average height. 
+prior_h <- rnorm(1e4, sample_mu, sample_sigma)
+dens(prior_h) # Distribution of relative pausibilities of different heights before seeing data.
+
+# Mess around with the priors
+sample_mu <- rnorm(1e4, 178, 90) # Higher variation in sigma reduces height + fattness of the tails. 
+sample_sigma <- runif(1e4, 0, 50) # Sigma=50 implies 95% of individual heights lie within 100 cm of average height.
+prior_h <- rnorm(1e4, sample_mu, sample_sigma)
+dens(prior_h) # Distribution of relative pausibilities of different heights before seeing data.
+
+```
+
+#### 4.3.3. Grid Approximiation of the posterior distribution
+
+```{r}
+# R code 4.14
+mu.list <- seq( from=140, to=160 , length.out=200 )
+sigma.list <- seq( from=4 , to=9 , length.out=200 )
+post <- expand.grid( mu=mu.list , sigma=sigma.list )
+post$LL <- sapply( 1:nrow(post) , function(i) sum( dnorm( # Calculate log likelihood for each grid value. Sum log densities
+    d2$height ,
+    mean=post$mu[i] ,
+    sd=post$sigma[i] ,
+    log=TRUE ) ) )
+post$prod <- post$LL + dnorm( post$mu , 178 , 20 , TRUE ) +
+dunif( post$sigma , 0 , 50 , TRUE )
+post$prob <- exp( post$prod - max(post$prod) ) # Scaled by max. Relative probabilities. Taking exp(post$prod) will round to zero.
+```
+
+```{r}
+# R code 4.15, 4.16
+contour_xyz(post$mu, post$sigma, post$prob)
+image_xyz(post$mu, post$sigma, post$prob)
+```
+
+```{r}
+# R code 4.17
+sample.rows <- sample( 1:nrow(post) , size=1e4 , replace=TRUE ,
+prob=post$prob )
+sample.mu <- post$mu[ sample.rows ]
+sample.sigma <- post$sigma[ sample.rows ]
+
+# R code 4.18
+plot( sample.mu , sample.sigma , cex=0.5 , pch=16 , col=col.alpha(rangi2,0.1) )
+```
+
+```{r}
+# R code 4.19
+# Marginal posterior densities of my and sigma. Marginal ~ Averaging over other parameters
+dens(sample.mu)
+dens(sample.sigma)
+```
+
+```{r}
+# R code 4.20
+HPDI(sample.mu)
+HPDI(sample.sigma)
+```
+
+```{r}
+# R code 4.21
+d3 <- sample(d2$height, size = 20)
+```
+
+```{r}
+# R code 4.22
+# Repeating grid approxmiation of posterior with sample size of 20. 
+mu.list <- seq( from=150, to=170 , length.out=200 )
+sigma.list <- seq( from=4 , to=20 , length.out=200 )
+post2 <- expand.grid( mu=mu.list , sigma=sigma.list )
+post2$LL <- sapply( 1:nrow(post2) , function(i)
+sum( dnorm( d3 , mean=post2$mu[i] , sd=post2$sigma[i] ,
+log=TRUE ) ) )
+post2$prod <- post2$LL + dnorm( post2$mu , 178 , 20 , TRUE ) +
+dunif( post2$sigma , 0 , 50 , TRUE )
+post2$prob <- exp( post2$prod - max(post2$prod) )
+sample2.rows <- sample( 1:nrow(post2) , size=1e4 , replace=TRUE ,
+prob=post2$prob )
+sample2.mu <- post2$mu[ sample2.rows ]
+sample2.sigma <- post2$sigma[ sample2.rows ]
+plot( sample2.mu , sample2.sigma , cex=0.5 ,
+col=col.alpha(rangi2,0.1) ,
+xlab="mu" , ylab="sigma" , pch=16 )
+```
+
+```{r}
+# R code 4.23
+dens(sample2.sigma , norm.comp=TRUE )
+```
+
+```{r}
+# R code 4.24
+library(rethinking)
+data(Howell1)
+d <- Howell1
+d2 <- d[d$age >= 18,]
+```
+
+```{r}
+# R code 4.25
+flist <- alist(
+  height ~ dnorm(mu, sigma),
+  mu ~ dnorm(178, 20),
+  sigma ~ dunif(0, 50)
+)
+```
+
+```{r}
+# R code 4.26
+m4.1 <- map( flist , data=d2 )
+```
+
+```{r}
+# R code 4.27
+precis(m4.1)
+```
+
+```{r}
+# R code 4.28
+# Choosing initial values. List executes code embedded inside, alist does not (simply writes out the formula) 
+start <- list(
+  mu = mean(d2$height),
+  sigma = sd(d2$height)
+)
+```
+
+```{r}
+# R code 4.29
+m4.2 <- map(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu ~ dnorm(178, 0.1), # Narrower prior, more confident on location of the mean. 
+    sigma ~ dunif(0, 50)
+  ),
+  data = d2
+)
+precis(m4.2)
+```
+
+Created certainty in the model that the mean is near 178 as defined by the prior. Sigma, conditional on this, is much larger. 
+
+A prior can be thought of as former posterior information. It can be useful to talk about the strgenth of a prior in terms of which data would lead to the same posterior distribution. We can compute the implied amount of data from the standard deviation of a Gaussian posterior for $\mu$:
+
+$$
+\sigma_{post} = 1 / \sqrt{n}
+$$
+
+$\mu\sim Normal(178, 0.1)$ implies $n = 1/0.01 = 100$ observations, this is a strong prior. 
+$\mu\sim Normal(178, 20)$ implies $n = 1/20^2 = 0.0025$ of an observation, this is a weak prior.
+
+#### 4.3.6 Sampling from a map fit
+Sampling from a posterior distribution gives combinations of parameter values PLUS their covariances.
+
+```{r}
+# R code 4.30
+vcov(m4.1)
+```
+
+```{r}
+# R code 4.31
+diag(vcov(m4.1))
+cov2cor(vcov(m4.1))
+```
+
+
+```{r}
+# R code 4.32
+library(rethinking)
+post <- extract.samples(m4.1, n=1e4)
+head(post)
+```
+
+```{r}
+# R code 4.33
+precis(post)
+```
+
+```{r}
+# R code 4.34
+# Simulating from multivariate gaussians
+library(MASS)
+post <- mvrnorm(n=1e4, mu = coef(m4.1), Sigma=vcov(m4.1))
+```
+
+Quadratic assumption for $\sigma$ is problamatic (only positive, positively skewed). Taking the log of this distribution often results in a gaussian which leads to a better quadratic approximation.
+
+```{r}
+# R code 4.35
+m4.1_logsigma <- map(
+  alist(
+    height ~ dnorm(mu, exp(log_sigma)),
+    mu ~ dnorm(178, 20),
+    log_sigma ~ dnorm(2, 10) # Now have a gaussian prior
+  ), data = d2
+)
+```
+
+```{r}
+# R code 4.36
+# Getting back the distribution of sigma
+post <- extract.samples(m4.1_logsigma)
+sigma <- exp(post$log_sigma)
+```
+
+### 4.4 Adding a predictor
+
+```{r}
+# R code 4.37
+# Knowing a persons weight helps predict height
+plot(d2$height ~ d2$weight)
+```
+Regression ~ Regressing to the mean. When individual measurements are assigned a common distribution, this leads to *shrinkage* as each measurement informs the others. 
+
+#### 4.4.1 The linear model strategy
+
+The linear model strategy assumes that the predictor variable has a perfectly constant and additive relationship to the mean of the outcome. 
+
+The parameteres of a linear model stand for the strength of association between the mean of the outcome and the value of the predictor. For each comnination of values, the machine computes the posterior probability (a measure of relative plausibility), given the model and data. The posterior distribution gives relative plausibilities of the different possible strengths of association, given the assumptions programmed in the model. 
+
+$$
+h_i\sim N(\mu_i,\sigma)\\
+\mu_i = \alpha + \beta x_i \\
+\alpha \sim N(178,100) \\
+\beta\sim N(0,10) \\
+\sigma\sim U(0,50)\\
+$$
+Note that $\mu_i$ is now deterministic, and not stochastic. $\alpha$ and $\beta$ are devices invented for manipulating $\mu$. They are targets of learning, something that must be described in the posterior density. 
+
+Aside: Units. Note here the $x_i$ is in kg and height is in cm. The kgs cancel out so that $\mu_i$ has units in cm. $\beta$ can be thought of some kind of weight, the number of cm per kg. 
+
+$$
+h_icm\sim N(\mu_i cm,\sigma cm)\\
+\mu_i cm = \alpha cm + \beta \frac{cm}{kg} x_i kg \\
+
+$$
+
+$\alpha = \mu$ before introducting predictor variable. The prior for $\alpha$ is widnened, as it is common for the intercept of a linear model to swing a long way from the mean of the outcome variable. 
+
+$\beta$ with mean 0 puts most of the prior probability on zero. This is seen as a conservative assumption as it pulls the probability mass towards zero. *But a gaussian prior with a standard deviation of 10 is still very weak, so the amount of conservatism it induces will be small.* This induces a lot variation in parameter values away from zero. As you make the SD smaller, the model produces more conservative esimates around zero, and therefore more conservative esitmate about the relationship between height and weight. 
+
+#### 4.4.2 Fitting the model
+
+```{r}
+# R code 4.38
+# load data again, since it's a long way back
+library(rethinking)
+data(Howell1)
+d <- Howell1
+d2 <- d[ d$age >= 18 , ]
+# fit model
+m4.3 <- map(
+  alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu <- a + b*weight , # mu not a parameter here. Replaced by linear model.
+    a ~ dnorm( 156 , 100 ) ,
+    b ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 50 )
+) ,
+data=d2 )
+```
+
+*Everything that depends upon parameters has a posterior distribution.* $\alpha$ and $\beta$ have a joint distribution, therefore so does $mu$ (even though it's not a parameter anymore). Since parameters are uncertain, everything that depnds upon them is also uncertain. 
+
+```{r}
+# R code 4.39
+m4.3 <- map(
+  alist(
+    height ~ dnorm( a + b*weight , sigma ) ,
+    a ~ dnorm( 178 , 100 ) ,
+    b ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 50 )
+) ,
+data=d2 )
+```
+
+#### 4.4.3. Interpreting model fit
+```{r}
+# R code 4.40
+precis(m4.3)
+```
+
+The estimate of $\alpha$ tells us the value of $\mu$ when the predictor variables have value zero. As a consequence, the value of the intercept is frequently uninterpretable without also studying any $\beta$ parameters. This is why we need very weak priors for intercepts in many cases. 
+
+$\sigma$ informs the width of the distribution of heights around the mean. 95% of probability in a gaussian distribution lies between two standard deviations. So the results tell us 95% of plausible heights lie within 10cm ($2\sigma$) of the mean height. The uncertainty of this estimate is indicated by the 89% percentile interval.
+
+```{r}
+# R code 4.4.0
+precis(m4.3, corr = TRUE)
+```
+
+$\alpha$ and $\beta$ are almost perfectly negatively correlated. It is harmless for now, it means that these two parameters carry the same information -- as you change the slope of the line, the best intercept changes to match it. 
+
+In more complex models, correlation between parameters make it difficult to fit the model to the data. So we can employ some tricks to avoid it when possible.
+
+The first trick is *centering*, this procedure subtracts the mean of a variable from each value. This results in the transformed variable having mean zero.
+
+```{r}
+# R code 4.42
+d2$weight.c <- d2$weight - mean(d2$weight)
+```
+
+```{r}
+# R code 4.43
+m4.4 <- map(
+  alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu <- a + b*weight.c ,
+    a ~ dnorm( 178 , 100 ) ,
+    b ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 50 )
+) ,
+data=d2 )
+```
+
+```{r}
+# R code 4.44
+precis(m4.4, corr = TRUE)
+```
+
+$\alpha$ now the same as average height value in the raw data. Correlations between intercept and slope now zero.
+
+The estimate for the incercept is the expected value of the outcome variable when the predictor variable is zero. The *mean* value of the predictor is now zero. Therefore, the incercept also means: the expected value of the outcome, when the predictor is at its average value.
+
+**Plotting posterior inference against the data.**
+
+```{r}
+# R code 4.45
+plot(height ~ weight, data = d2)
+abline(a = coef(m4.3)["a"], b = coef(m4.3)["b"])
+```
+
+**Adding uncertainty around the mean**
+
+The MAP line is just the posterior mean, the most plausible line out of all the lines the posterior has considered. Does not clearly communicate uncertainty.
+
+The posterior distribution considers every possible regression line connecting height and weight, assigning a relative plausibility to each. 
+
+```{r}
+# R code 4.46
+post <- extract.samples(m4.3)
+```
+
+```{r}
+# R code 4.47
+# Each row is a correlated random sample from the joint posterior of all three parameters, using covariances provided by vcov(m4.3)
+post[1:5,]
+#vcov(m4.3)
+```
+
+```{r}
+# R code 4.48
+# Start with first 10 observations to see how data size influences uncertainty
+N <- 352 # Change this
+dN <- d2[ 1:N , ]
+mN <- map(
+  alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu <- a + b*weight ,
+    a ~ dnorm( 178 , 100 ) ,
+    b ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 50 )
+) , data=dN )
+
+# R code 4.49
+# extract 20 samples from the posterior
+post <- extract.samples( mN , n=20000 )
+# display raw data and sample size
+plot( dN$weight , dN$height ,
+  xlim=range(d2$weight) , ylim=range(d2$height) ,
+  col=rangi2 , xlab="weight" , ylab="height" )
+mtext(concat("N = ",N))
+# plot the lines, with transparency
+for ( i in 1:20 )
+  abline( a=post$a[i] , b=post$b[i] , col=col.alpha("black",0.3) )
+```
+
+**Plotting regression intervals and contours**
+```{r}
+# R code 4.50
+mu_at_50 <- post$a + post$b*50
+```
+
+```{r}
+# R code 4.51
+dens(mu_at_50, col = rangi2, lwd = 2, xlab="mu|weight=50")
+```
+
+```{r}
+# R code 4.52
+HPDI(mu_at_50, prob = 0.89)
+```
+
+
+# Quotes
+
+Stripping away information away about uncertainty leads to over confidence.
+
+Priors information is more subtle, because parameteres don't always have such clear physical meaning.
+
+Posterior probabilities of parameter values describe the relative compatibility of different states of the world with the data, according to the model.
