@@ -93,3 +93,21 @@ $$
 
 Where the average likelihood normalises the posterior so that it integrates to 1. The posterior is the *standardised product of the likelihood and proior
 
+
+# Lecture 03
+"Just because your model makes accurate predictions, does not mean it is right."
+
+Linear regression is descriptive of how the mean is conditional on variables we know. Does necessarily model the natural process. They are *descriptively accurate* and a good *general method of approximation.*
+
+Gaussian as a model of error.
+
+Gaussian distribution is the *most conservative*. Spreads probabilitly the most *flatly* for a given mean and variance.
+
+Language for modeling
+
+1) What are the outcomes?
+2) How are the outcomes contrained (what is the likelihood)?
+3) What are the predictiors, if any
+4) How do predictors relate to likelihood
+5) What are the priors?
+

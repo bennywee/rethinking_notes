@@ -708,15 +708,15 @@ data=d2 )
 *Everything that depends upon parameters has a posterior distribution.* $\alpha$ and $\beta$ have a joint distribution, therefore so does $mu$ (even though it's not a parameter anymore). Since parameters are uncertain, everything that depnds upon them is also uncertain. 
 
 ```{r}
-# R code 4.39
-m4.3 <- map(
-  alist(
-    height ~ dnorm( a + b*weight , sigma ) ,
-    a ~ dnorm( 178 , 100 ) ,
-    b ~ dnorm( 0 , 10 ) ,
-    sigma ~ dunif( 0 , 50 )
-) ,
-data=d2 )
+# R code 4.39 (CAUSES ERRORS. doesn't add the intercept. link(m4.3) to check. Use 4.38)
+# m4.3 <- map(
+#   alist(
+#     height ~ dnorm( a + b*weight , sigma ) ,
+#     a ~ dnorm( 178 , 100 ) ,
+#     b ~ dnorm( 0 , 10 ) ,
+#     sigma ~ dunif( 0 , 50 )
+# ) ,
+# data=d2 )
 ```
 
 #### 4.4.3. Interpreting model fit
@@ -765,7 +765,7 @@ precis(m4.4, corr = TRUE)
 
 $\alpha$ now the same as average height value in the raw data. Correlations between intercept and slope now zero.
 
-The estimate for the incercept is the expected value of the outcome variable when the predictor variable is zero. The *mean* value of the predictor is now zero. Therefore, the incercept also means: the expected value of the outcome, when the predictor is at its average value.
+The estimate for the incercept is the expected value of the outcome variable when the predictor variable is zero. The *mean* value of the predictor is now zero. Therefore, the incercept also means: the expected value of the outcome, when the predictor is at its average value (since alpha is mean when x = 0 = x_bar).
 
 **Plotting posterior inference against the data.**
 
@@ -775,7 +775,7 @@ plot(height ~ weight, data = d2)
 abline(a = coef(m4.3)["a"], b = coef(m4.3)["b"])
 ```
 
-**Adding uncertainty around the mean**
+##### Adding uncertainty around the mean (unceratinty around fitted mu, the linear model)
 
 The MAP line is just the posterior mean, the most plausible line out of all the lines the posterior has considered. Does not clearly communicate uncertainty.
 
@@ -796,7 +796,7 @@ post[1:5,]
 ```{r}
 # R code 4.48
 # Start with first 10 observations to see how data size influences uncertainty
-N <- 352 # Change this
+N <- 352 # Change this (otherwise 4.51 won't look the same in the book)
 dN <- d2[ 1:N , ]
 mN <- map(
   alist(
@@ -809,7 +809,7 @@ mN <- map(
 
 # R code 4.49
 # extract 20 samples from the posterior
-post <- extract.samples( mN , n=20000 )
+post <- extract.samples( mN , n=20000 ) # Change samples here too for 4.41 density
 # display raw data and sample size
 plot( dN$weight , dN$height ,
   xlim=range(d2$weight) , ylim=range(d2$height) ,
@@ -828,7 +828,7 @@ mu_at_50 <- post$a + post$b*50
 
 ```{r}
 # R code 4.51
-dens(mu_at_50, col = rangi2, lwd = 2, xlab="mu|weight=50")
+dens(mu_at_50, col = rangi2, lwd = 2, xlab="mu|weight=50") # check 4.48 and 4.49 if things dont look right
 ```
 
 ```{r}
@@ -836,6 +836,1020 @@ dens(mu_at_50, col = rangi2, lwd = 2, xlab="mu|weight=50")
 HPDI(mu_at_50, prob = 0.89)
 ```
 
+```{r}
+# R code 4.53
+# Rows -> Samples from posterior. Columns -> 352 individuals/observaions from the data. 
+# So sampling posterior of mu (y_hat or conditional mean) for each value of x_i
+mu1 <- link(m4.3)
+str(mu1)
+```
+
+```{r}
+# R code 4.54 
+# define sequence of weights to compute predictions for
+# these values will be on the horizontal axis
+weight.seq <- seq(from = 25, to = 70, by = 1) # 46 new x values
+
+# Use link to compute mu
+# for each sample from posterior
+# and for each weight in weight.seq
+mu <- link(mN, data = data.frame(weight = weight.seq)) # 46 columns sampling mu from
+str(mu)
+```
+
+```{r}
+# R code 4.55
+# Use type = "n" to hide raw data
+plot(height ~ weight, d2, type = "n")
+# Loop over samples and plot each mu alue
+for (i in 1:100){
+  points(weight.seq, mu[i,], pch = 16, col = rangi2)
+}
+
+```
+```{r}
+# R code 4.56
+# Summarise the distribution of mu
+mu.mean <- apply(mu, 2, mean)
+mu.HPDI <- apply(mu, 2, HPDI, prob = 0.89)
+```
+
+```{r}
+# R code 4.57
+# plot raw data
+# fading out points to make line and interval more visible
+plot(height ~ weight, data = d2, col = col.alpha(rangi2, 0.5))
+
+# plot the MAP line, aka the mean mu for each weight
+lines(weight.seq, mu.mean)
+
+# plot a shaded region for 89% HPDI
+shade(mu.HPDI, weight.seq)
+```
+
+
+```{r}
+# R code 4.58
+# Under the hood of link, simulating conditional mean/linear model
+post <- extract.samples(m4.3)
+mu.link <- function(weight) post$a + post$b*weight.c
+weight.seq <- seq(from = 25, to = 70, by = 1)
+mu <- sapply(weight.seq, mu.link)
+mu.mean <- apply(mu, 2, mean)
+mu.HPDI <- apply(mu, 2, HPDI, probs = 0.89)
+```
+##### Prediction intervals (prediction of y, the data)
+
+```{r}
+# R code 4.59
+# Simulated HEIGHTS not distributions of possible average heights (mu)
+sim.height <- sim(m4.3, data = list(weight = weight.seq))
+str(sim.height)
+```
+
+```{r}
+# R code 4.60
+# Caclculate 89% prediction interval  of observable (according to the model) heights
+height.PI <- apply(sim.height, 2, PI, prob = 0.89)
+```
+```{r}
+# R code 4.61
+# Plot of 89% prediction intervals for heights
+
+# Plot raw data
+plot( height ~ weight , d2 , col=col.alpha(rangi2,0.5) )
+# draw MAP line
+lines( weight.seq , mu.mean )
+# draw HPDI region for line
+shade( mu.HPDI , weight.seq )
+# draw PI region for simulated heights
+shade( height.PI , weight.seq )
+```
+
+Jagged outline for prediction interval due to simulation variance in the tails of the sampled Gaussian values. Increase the number of samples drawn to smoothen this out. 
+
+```{r}
+# R code 4.62
+sim.height <- sim(m4.3, data = list(weight = weight.seq), n = 1e4)
+height.PI <- apply(sim.height,2, PI, prob = 0.89)
+```
+
+Encountered two kinds of uncertainty (parameter values and sampling process).  Use of the gaussain likelihood may be a purely epistemoogical assumtion (used to estimate mean/variance of a variable), rather than an ontological assumption about what future data will look like. If so, may not make sense to simulate outcomes. 
+
+```{r}
+# R code 4.63 under the hood of the sim function
+post <- extract.samples(m4.3)
+weight.seq <- 25:70
+sim.height <- sapply( weight.seq , function(weight)
+  rnorm(
+    n=nrow(post) ,
+    mean=post$a + post$b*weight ,
+    sd=post$sigma ) )
+height.PI <- apply( sim.height , 2 , PI , prob=0.89 )
+```
+
+
+
+### 4.5 Plynomial regression
+
+```{r}
+# R code 4.64
+library(rethinking)
+data(Howell1)
+d <- Howell1
+str(d)
+
+plot(d$height ~ d$weight) # non linear
+```
+
+```{r}
+# R code 4.65
+# Standardising variables. Interpretation might be easier (one unit is one std dev)
+# Easier to fit model to data. Particularly for polynomial regression. 
+d$weight.s <- ( d$weight - mean(d$weight) )/sd(d$weight)
+```
+
+```{r}
+# R code 4.66
+d$weight.s2 <- d$weight.s^2
+m4.5 <- map(
+  alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu <- a + b1*weight.s + b2*weight.s2 ,
+    a ~ dnorm( 178 , 100 ) ,
+    b1 ~ dnorm( 0 , 10 ) ,
+    b2 ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 50 )
+) ,
+data=d )
+
+# R code 4.67
+precis(m4.5)
+```
+
+```{r}
+# R code 4.68
+weight.seq <- seq( from=-2.2 , to=2 , length.out=30 )
+pred_dat <- list( weight.s=weight.seq , weight.s2=weight.seq^2 )
+mu <- link( m4.5 , data=pred_dat )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI , prob=0.89 )
+sim.height <- sim( m4.5 , data=pred_dat )
+height.PI <- apply( sim.height , 2 , PI , prob=0.89 )
+```
+
+```{r}
+# R code 4.69
+plot( height ~ weight.s , d , col=col.alpha(rangi2,0.5) )
+lines( weight.seq , mu.mean )
+shade( mu.PI , weight.seq )
+shade( height.PI , weight.seq )
+```
+```{r}
+# R code 4.70
+d$weight.s3 <- d$weight.s^3
+m4.6 <- map(
+  alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu <- a + b1*weight.s + b2*weight.s2 + b3*weight.s3 ,
+    a ~ dnorm( 178 , 100 ) ,
+    b1 ~ dnorm( 0 , 10 ) ,
+    b2 ~ dnorm( 0 , 10 ) ,
+    b3 ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 50 )
+) ,
+data=d )
+```
+
+```{r}
+# R code 4.71
+# Converting to natural scale. Turn off horizontal axis
+plot( height ~ weight.s , d , col=col.alpha(rangi2,0.5) , xaxt="n" )
+
+# R code 4.72 Construct the axis manually
+at <- c(-2,-1,0,1,2)
+labels <- at*sd(d$weight) + mean(d$weight)
+axis( side=1 , at=at , labels=round(labels,1) )
+
+```
+
+
+## Chapter 5 Multivariate Linear Models
+Reasons for using mulivariate Regressions:
+
+1) Statistical "control" for confounds. Where confounds are variables that may be correlated with another variable of interest. 
+2) Multiple causation. In the absense of confounds (due to perhaps, tight experimental design), we can use multivariate regression to estimate multiple causes. Some causes may 'mask' the effect of others, so it is important to capture these effects.
+3) Interactions. Where effectiveness about one variable depends on consideration of other variables (e.g. water and sunlight for plant growth. Plant can't grow with only one of these.)
+
+### 5.1 Spurious Association
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# R code 5.1 
+library(rethinking)
+data(WaffleDivorce)
+d <- WaffleDivorce
+
+# Standardise the predictor
+d$MedianAgeMarriage.s <- (d$MedianAgeMarriage - mean(d$MedianAgeMarriage)) / sd(d$MedianAgeMarriage)
+
+# Fit model
+m5.1 <- map(
+  alist(
+  Divorce ~ dnorm(mu, sigma),
+  mu <- a + bA * MedianAgeMarriage.s,
+  a ~ dnorm(10, 10),
+  bA ~ dnorm(0, 1),
+  sigma ~ dunif(0, 10)
+  ),
+data = d
+)
+```
+
+```{r}
+# R code 5.2
+
+# Compute percentile interval of mean
+MAM.seq <- seq(from = -3, to = 3.5, length.out = 30)
+mu <- link(m5.1, data = data.frame(MedianAgeMarriage.s = MAM.seq))
+mu.PI <- apply(mu, 2, PI)
+
+# Plot
+plot(Divorce ~ MedianAgeMarriage.s, data = d, col = rangi2)
+abline(m5.1)
+shade(mu.PI, MAM.seq)
+
+precis(m5.1)
+```
+
+```{r}
+# R code 5.3
+d$Marriage.s <- (d$Marriage - mean(d$Marriage)) / sd(d$Marriage)
+
+m5.2 <- map(
+  alist(
+    Divorce ~ dnorm(mu, sigma),
+    mu <- a + bR * Marriage.s,
+    a ~ dnorm(10, 10),
+    bR ~ dnorm(0, 1),
+    sigma ~ dunif(0, 10)
+  ) , data = d
+)
+
+precis(m5.2)
+```
+
+```{r}
+# R code 5.4
+m5.3 <- map(
+  alist(
+    Divorce ~ dnorm(mu, sigma),
+    mu <- a + bR*Marriage.s + bA*MedianAgeMarriage.s,
+    a ~ dnorm(10, 10),
+    bR ~ dnorm(0, 1),
+    bA ~ dnorm(0 , 1),
+    sigma ~ dunif(0, 10)
+  ) , data = d
+)
+precis(m5.3) # R code 5.5
+```
+
+
+#### 5.1.3. Plotting mltivariace posteriors
+
+1) Predictor residual plots
+2) Counter factual plots
+3) Posterior prediction plots
+
+*Predictor residual plots*
+Partialing out relationshop of other predictors and plotting residuals against the dependent variable
+```{r}
+# R code 5.6
+m5.4 <- map(
+  alist(
+    Marriage.s ~ dnorm(mu, sigma),
+    mu <- a + b*MedianAgeMarriage.s,
+    a ~ dnorm(0, 10),
+    b ~ dnorm(0, 1),
+    sigma ~ dunif(0, 10)
+  ), data = d
+)
+
+# R code 5.7 
+# Compute residuals
+mu <- coef(m5.4)['a'] + coef(m5.4)['b']*d$MedianAgeMarriage.s
+m.resid <- d$Marriage.s- mu
+
+# R code 5.8
+plot(Marriage.s ~ MedianAgeMarriage.s, d, col = rangi2)
+abline(m5.4)
+
+# Loop over States
+for(i in 1:length(m.resid)){
+  x <- d$MedianAgeMarriage.s[i] # x location of line segment
+  y <- d$Marriage.s[i] # observed endpoint of line segment
+  lines(c(x,x), c(mu[i],y), lwd=0.5, col=col.alpha("black",0.7))
+}
+```
+
+*5.1.3.2. Counter factual plots*
+Plotting relationship between dependent and predictor, holding all else constant.
+
+```{r}
+# R code 5.9
+# Prepare new counterfactual data
+A.avg <- mean(d$MedianAgeMarriage.s)
+R.seq <- seq(from = -3, to = 3, length.out = 30)
+
+pred.data <- data.frame(
+  Marriage.s = R.seq,
+  MedianAgeMarriage.s = A.avg
+)
+
+# Compute counterfactual mean divorce (mu)
+mu <- link(m5.3, data = pred.data)
+mu.mean <- apply(mu, 2, mean)
+mu.PI <- apply(mu, 2, PI)
+
+# Simulate counterfactual divorce outcomes
+R.sim <- sim(m5.3, data = pred.data, n = 1e4)
+
+R.PI <- apply(R.sim, 2, PI)
+
+# Display predictions
+plot(Divorce ~ Marriage.s, data = d, type = "n")
+mtext("MedianAgeMarriage.s = 0")
+lines(R.seq, mu.mean)
+shade(mu.PI, R.seq)
+shade(R.PI, R.seq)
+```
+
+```{r}
+## R code 5.10
+R.avg <- mean( d$Marriage.s ) # Could be left out since centred on 0
+A.seq <- seq( from=-3 , to=3.5 , length.out=30 )
+pred.data2 <- data.frame(
+    Marriage.s=R.avg,
+    MedianAgeMarriage.s=A.seq
+)
+
+mu <- link( m5.3 , data=pred.data2 )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+
+A.sim <- sim( m5.3 , data=pred.data2 , n=1e4 )
+A.PI <- apply( A.sim , 2 , PI )
+
+plot( Divorce ~ MedianAgeMarriage.s , data=d , type="n" )
+mtext( "Marriage.s = 0" )
+lines( A.seq , mu.mean )
+shade( mu.PI , A.seq )
+shade( A.PI , A.seq )
+```
+
+*5.1.3.3. Posterior Prediction plots*
+Checking model fit against observed plots. Two questions:
+
+1) Did the model fit correctly? (Human or software error)
+2) How does the model fail? (Not all models are perfect)
+
+```{r}
+## R code 5.11
+# call link without specifying new data
+# so it uses original data
+mu <- link( m5.3 )
+
+# summarize samples across cases
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+
+# simulate observations
+# again no new data, so uses original data
+divorce.sim <- sim( m5.3 , n=1e4 )
+divorce.PI <- apply( divorce.sim , 2 , PI )
+```
+
+```{r}
+## R code 5.12
+plot( mu.mean ~ d$Divorce , col=rangi2 , ylim=range(mu.PI) ,
+    xlab="Observed divorce" , ylab="Predicted divorce" )
+abline( a=0 , b=1 , lty=2 )
+for ( i in 1:nrow(d) )
+    lines( rep(d$Divorce[i],2) , c(mu.PI[1,i],mu.PI[2,i]) ,
+        col=rangi2 )
+## R code 5.13
+identify( x=d$Divorce , y=mu.mean , labels=d$Loc , cex=0.8 )
+```
+
+```{r}
+## R code 5.14
+# compute residuals
+divorce.resid <- d$Divorce - mu.mean
+# get ordering by divorce rate
+o <- order(divorce.resid)
+# make the plot
+dotchart( divorce.resid[o] , labels=d$Loc[o] , xlim=c(-6,5) , cex=0.6 )
+abline( v=0 , col=col.alpha("black",0.2) )
+for ( i in 1:nrow(d) ) {
+    j <- o[i] # which State in order
+    lines( d$Divorce[j]-c(mu.PI[1,j],mu.PI[2,j]) , rep(i,2) )
+    points( d$Divorce[j]-c(divorce.PI[1,j],divorce.PI[2,j]) , rep(i,2),
+        pch=3 , cex=0.6 , col="gray" )
+}
+```
+
+We can also use the resduals in models with othe predictors to see if other predictors have an association with the dependent variable once the other predictors have been partialled out (or after controlling for the other variables). Note that it is always possible to find spurious correlations with residuals and other predictors. 
+
+```{r}
+# R code 5.15
+N <- 100 # number of cases
+x_real <- rnorm( N ) # x_real as Gaussian with mean 0 and stddev 1
+x_spur <- rnorm( N , x_real ) # x_spur as Gaussian with mean=x_real
+y <- rnorm( N , x_real ) # y as Gaussian with mean=x_real
+d <- data.frame(y,x_real,x_spur) # bind all together in data frame
+pairs(d)
+```
+
+
+### 5.2 Masked relationship
+```{r}
+## R code 5.16
+library(rethinking)
+data(milk)
+d <- milk
+str(d)
+```
+
+```{r}
+## R code 5.17
+m5.5 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bn*neocortex.perc ,
+        a ~ dnorm( 0 , 100 ) ,
+        bn ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 1 )
+    ) ,
+    data=d )
+```
+```{r}
+## R code 5.18
+d$neocortex.perc
+
+## R code 5.19
+dcc <- d[ complete.cases(d) , ]
+```
+
+```{r}
+## R code 5.20
+m5.5 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bn*neocortex.perc ,
+        a ~ dnorm( 0 , 100 ) ,
+        bn ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 1 )
+    ) ,
+    data=dcc )
+
+## R code 5.21
+precis( m5.5 , digits=3 )
+```
+
+```{r}
+## R code 5.22
+coef(m5.5)["bn"] * ( 76 - 55 )
+```
+
+```{r}
+## R code 5.23
+np.seq <- 0:100
+pred.data <- data.frame( neocortex.perc=np.seq )
+
+mu <- link( m5.5 , data=pred.data , n=1e4 )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+
+plot( kcal.per.g ~ neocortex.perc , data=dcc , col=rangi2 )
+lines( np.seq , mu.mean )
+lines( np.seq , mu.PI[1,] , lty=2 )
+lines( np.seq , mu.PI[2,] , lty=2 )
+```
+
+Taking the log of a measure translates the measure into magnitudes
+
+```{r}
+## R code 5.24
+dcc$log.mass <- log(dcc$mass)
+
+## R code 5.25
+m5.6 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bm*log.mass ,
+        a ~ dnorm( 0 , 100 ) ,
+        bm ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 1 )
+    ) ,
+    data=dcc )
+precis(m5.6)
+```
+
+```{r}
+## R code 5.26
+m5.7 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bn*neocortex.perc + bm*log.mass ,
+        a ~ dnorm( 0 , 100 ) ,
+        bn ~ dnorm( 0 , 1 ) ,
+        bm ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 1 )
+    ) ,
+    data=dcc )
+precis(m5.7)
+```
+
+```{r}
+## R code 5.27
+mean.log.mass <- mean( log(dcc$mass) )
+np.seq <- 0:100
+pred.data <- data.frame(
+    neocortex.perc=np.seq,
+    log.mass=mean.log.mass
+)
+
+mu <- link( m5.7 , data=pred.data , n=1e4 )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+
+plot( kcal.per.g ~ neocortex.perc , data=dcc , type="n" )
+lines( np.seq , mu.mean )
+lines( np.seq , mu.PI[1,] , lty=2 )
+lines( np.seq , mu.PI[2,] , lty=2 )
+
+# Try with log mass
+mean.neocortex.perc <- mean( dcc$neocortex.perc)
+np.seq <- -10:100
+pred.data <- data.frame(
+    neocortex.perc=mean.neocortex.perc,
+    log.mass=np.seq
+)
+
+mu <- link( m5.7 , data=pred.data , n=1e4 )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+
+plot( kcal.per.g ~ log.mass , data=dcc , type="n" )
+lines( np.seq , mu.mean )
+lines( np.seq , mu.PI[1,] , lty=2 )
+lines( np.seq , mu.PI[2,] , lty=2 )
+
+```
+Mass negatively correlated with outcome, neocortex positively correlated with outcome. Both predictors *positively* correlated with each other. This understates (biases) the relationship each has with the outcome. Omitting neocortex creates a positive bias in mass/outcome, omitting mass creates a negative bias in neocortex/outcome.
+
+Model asks if species with high neocortex percent *for their body mass (given)* have higher milk energy and whether high mass *given their neocortex percentage* have migher milk energy. 
+```{r}
+## R code 5.28
+N <- 100                         # number of cases
+rho <- 0.7                       # correlation btw x_pos and x_neg
+x_pos <- rnorm( N )              # x_pos as Gaussian
+x_neg <- rnorm( N , rho*x_pos ,  # x_neg correlated with x_pos
+    sqrt(1-rho^2) )
+y <- rnorm( N , x_pos - x_neg )  # y equally associated with x_pos, x_neg
+d <- data.frame(y,x_pos,x_neg)   # bind all together in data frame
+pairs(d)
+```
+### 5.3 When adding variables hurts
+
+#### Multicollinearity
+```{r}
+## R code 5.29
+N <- 100                          # number of individuals
+height <- rnorm(N,10,2)           # sim total height of each
+leg_prop <- runif(N,0.4,0.5)      # leg as proportion of height
+leg_left <- leg_prop*height +     # sim left leg as proportion + error
+    rnorm( N , 0 , 0.02 )
+leg_right <- leg_prop*height +    # sim right leg as proportion + error
+    rnorm( N , 0 , 0.02 )
+                                  # combine into data frame
+d <- data.frame(height,leg_left,leg_right)
+
+## R code 5.30
+m5.8 <- map(
+    alist(
+        height ~ dnorm( mu , sigma ) ,
+        mu <- a + bl*leg_left + br*leg_right ,
+        a ~ dnorm( 10 , 100 ) ,
+        bl ~ dnorm( 2 , 10 ) ,
+        br ~ dnorm( 2 , 10 ) ,
+        sigma ~ dunif( 0 , 10 )
+    ) ,
+    data=d )
+precis(m5.8)
+```
+
+```{r}
+## R code 5.31
+plot(precis(m5.8))
+```
+```{r}
+## R code 5.32
+post <- extract.samples(m5.8)
+plot( bl ~ br , post , col=col.alpha(rangi2,0.1) , pch=16 )
+```
+
+Highly correlated posteriors for left and right leg parameters. When one is large, the other most be small, cancelling each other out since both variables contain almost exactly the same information. There are an infinite number of combinations that produce the same predictions.
+
+```{r}
+## R code 5.33
+sum_blbr <- post$bl + post$br
+dens( sum_blbr , col=rangi2 , lwd=2 , xlab="sum of bl and br" )
+```
+
+```{r}
+## R code 5.34
+## Using one leg gives close to same posterior mean has the sum of both bl and br
+m5.9 <- map(
+    alist(
+        height ~ dnorm( mu , sigma ) ,
+        mu <- a + bl*leg_left,
+        a ~ dnorm( 10 , 100 ) ,
+        bl ~ dnorm( 2 , 10 ) ,
+        sigma ~ dunif( 0 , 10 )
+    ) ,
+    data=d )
+precis(m5.9)
+
+```
+
+#### 5.3.2. Multicollinear milk
+```{r}
+## R code 5.35
+library(rethinking)
+data(milk)
+d <- milk
+```
+
+```{r}
+## R code 5.36
+# kcal.per.g regressed on perc.fat
+m5.10 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bf*perc.fat ,
+        a ~ dnorm( 0.6 , 10 ) ,
+        bf ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+    ) ,
+    data=d )
+
+# kcal.per.g regressed on perc.lactose
+m5.11 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bl*perc.lactose ,
+        a ~ dnorm( 0.6 , 10 ) ,
+        bl ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+    ) ,
+    data=d )
+
+precis( m5.10 , digits=3 )
+precis( m5.11 , digits=3 )
+```
+
+```{r}
+## R code 5.37
+# SDs twice as large, post means close to 0. Contain same information, describing a 
+# long ridge of combinations of bf and bl that are equally possible.
+m5.12 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bf*perc.fat + bl*perc.lactose ,
+        a ~ dnorm( 0.6 , 10 ) ,
+        bf ~ dnorm( 0 , 1 ) ,
+        bl ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+    ) ,
+    data=d )
+precis( m5.12 , digits=3 )
+
+```
+
+```{r}
+## R code 5.38 
+## These two variables form essentially form a single axis of variation
+## Two explanatory variables are close to perfectly negatively correlated
+## individually, they help oredict the dependent, but *neither helps once
+## you already know the other*.
+pairs( ~ kcal.per.g + perc.fat + perc.lactose ,
+    data=d , col=rangi2 )
+```
+
+```{r}
+## R code 5.39
+cor( d$perc.fat , d$perc.lactose )
+```
+
+*Check vovariation among parameters, especially when intervals are extremely wide, so you dont' misinterpret what the model is trying to tell you*
+
+As long as porterior integrates to 1, then all parameters are identified. But sometimes with wide intervals it's hard to make sense of the post dist. So we can say it's "weakly identified".
+
+```{r}
+## R code 5.40
+## Simulating correlated variables.
+library(rethinking)
+data(milk)
+d <- milk
+sim.coll <- function( r=0.9 ) {
+    d$x <- rnorm( nrow(d) , mean=r*d$perc.fat ,
+        sd=sqrt( (1-r^2)*var(d$perc.fat) ) )
+    m <- lm( kcal.per.g ~ perc.fat + x , data=d )
+    sqrt( diag( vcov(m) ) )[2] # stddev of parameter
+}
+rep.sim.coll <- function( r=0.9 , n=100 ) {
+    stddev <- replicate( n , sim.coll(r) )
+    mean(stddev)
+}
+r.seq <- seq(from=0,to=0.99,by=0.01)
+stddev <- sapply( r.seq , function(z) rep.sim.coll(r=z,n=100) )
+plot( stddev ~ r.seq , type="l" , col=rangi2, lwd=2 , xlab="correlation" )
+```
+
+```{r}
+## R code 5.41
+# number of plants
+N <- 100
+
+# simulate initial heights
+h0 <- rnorm(N,10,2)
+
+# assign treatments and simulate fungus and growth
+treatment <- rep( 0:1 , each=N/2 )
+fungus <- rbinom( N , size=1 , prob=0.5 - treatment*0.4 )
+h1 <- h0 + rnorm(N, 5 - 3*fungus)
+
+# compose a clean data frame
+d <- data.frame( h0=h0 , h1=h1 , treatment=treatment , fungus=fungus )
+
+```
+
+```{r}
+## R code 5.42
+## Including fungus, a post treatment variable. Post mean of treatment does not make sense
+m5.13 <- map(
+    alist(
+        h1 ~ dnorm(mu,sigma),
+        mu <- a + bh*h0 + bt*treatment + bf*fungus,
+        a ~ dnorm(0,100),
+        c(bh,bt,bf) ~ dnorm(0,10),
+        sigma ~ dunif(0,10)
+    ),
+    data=d )
+precis(m5.13)
+```
+
+```{r}
+## R code 5.43
+## Excluding post treatment variable.
+m5.14 <- map(
+    alist(
+        h1 ~ dnorm(mu,sigma),
+        mu <- a + bh*h0 + bt*treatment,
+        a ~ dnorm(0,100),
+        c(bh,bt) ~ dnorm(0,10),
+        sigma ~ dunif(0,10)
+    ),
+    data=d )
+precis(m5.14)
+```
+
+Pre treatment vaeriables may mask causal inference of treatment *if excluded from the model*, so we should include them in the model.
+
+Post treatment varaiables may mask the treatment itself if *included in the model*, so we should exclude them from the model.
+
+Note the model may give better predictions if we include the post treatment variable, it may fit the sample better. But if we care about causal inference, such models are answering the wrong question. Hence we cannot use information criteria for comparison of model validity in this case. It is measuring the wrong metric.
+
+### 5.4 Categorical variables
+
+```{r}
+## R code 5.44
+data(Howell1)
+d <- Howell1
+str(d)
+
+## R code 5.45
+m5.15 <- map(
+    alist(
+        height ~ dnorm( mu , sigma ) ,
+        mu <- a + bm*male ,
+        a ~ dnorm( 178 , 100 ) ,
+        bm ~ dnorm( 0 , 10 ) ,
+        sigma ~ dunif( 0 , 50 )
+    ) ,
+    data=d )
+precis(m5.15)
+
+```
+
+To get average male height, add the samples of alpha and beta together to get the posterior distribution of their sum. Can't just add boundaries together (quantiles), since the parameteres are correlated. Dealing with samples is one way around this problem.
+
+```{r}
+## R code 5.46
+post <- extract.samples(m5.15)
+mu.male <- post$a + post$bm
+PI(mu.male)
+```
+
+```{r}
+## R code 5.47
+m5.15b <- map(
+    alist(
+        height ~ dnorm( mu , sigma ) ,
+        mu <- af*(1-male) + am*male ,
+        af ~ dnorm( 178 , 100 ) ,
+        am ~ dnorm( 178 , 100 ) ,
+        sigma ~ dunif( 0 , 50 )
+    ) ,
+    data=d )
+
+```
+
+```{r}
+## R code 5.48
+data(milk)
+d <- milk
+unique(d$clade)
+
+## R code 5.49
+( d$clade.NWM <- ifelse( d$clade=="New World Monkey" , 1 , 0 ) )
+
+## R code 5.50
+d$clade.OWM <- ifelse( d$clade=="Old World Monkey" , 1 , 0 )
+d$clade.S <- ifelse( d$clade=="Strepsirrhine" , 1 , 0 )
+
+## R code 5.51
+m5.16 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + b.NWM*clade.NWM + b.OWM*clade.OWM + b.S*clade.S ,
+        a ~ dnorm( 0.6 , 10 ) ,
+        b.NWM ~ dnorm( 0 , 1 ) ,
+        b.OWM ~ dnorm( 0 , 1 ) ,
+        b.S ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+    ) ,
+    data=d )
+precis(m5.16)
+
+```
+
+```{r}
+## R code 5.52
+# sample posterior
+post <- extract.samples(m5.16)
+
+# compute averages for each category
+mu.ape <- post$a
+mu.NWM <- post$a + post$b.NWM
+mu.OWM <- post$a + post$b.OWM
+mu.S <- post$a + post$b.S
+
+# summarize using precis
+precis( data.frame(mu.ape,mu.NWM,mu.OWM,mu.S) )
+
+## R code 5.53
+diff.NWM.OWM <- mu.NWM - mu.OWM
+quantile( diff.NWM.OWM , probs=c(0.025,0.5,0.975) )
+```
+
+```{r}
+## R code 5.54
+( d$clade_id <- coerce_index(d$clade) )
+
+## R code 5.55
+m5.16_alt <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a[clade_id] ,
+        a[clade_id] ~ dnorm( 0.6 , 10 ) ,
+        sigma ~ dunif( 0 , 10 )
+    ) ,
+    data=d )
+precis( m5.16_alt , depth=2 )
+```
+
+### 5.5 OLS and LM
+
+```{r}
+## R code 5.56
+m5.17 <- lm( y ~ 1 + x , data=d )
+m5.18 <- lm( y ~ 1 + x + z + w , data=d )
+
+## R code 5.57
+m5.17 <- lm( y ~ 1 + x , data=d )
+m5.19 <- lm( y ~ x , data=d )
+
+## R code 5.58
+m5.20 <- lm( y ~ 0 + x , data=d )
+m5.21 <- lm( y ~ x - 1 , data=d )
+
+## R code 5.59
+m5.22 <- lm( y ~ 1 + as.factor(season) , data=d )
+
+## R code 5.60
+d$x2 <- d$x^2
+d$x3 <- d$x^3
+m5.23 <- lm( y ~ 1 + x + x2 + x3 , data=d )
+
+## R code 5.61
+m5.24 <- lm( y ~ 1 + x + I(x^2) + I(x^3) , data=d )
+
+## R code 5.62
+data(cars)
+glimmer( dist ~ speed , data=cars )
+
+```
+
+## Chapter 6 Overfitting, Regularisation and Information Criteria
+
+Simplicity vs accuracy. If accuracy is constatnt between models, occam's razor, use the one with the least assumptions (hardly ever the case)
+
+```{r}
+## R code 6.1
+sppnames <- c( "afarensis","africanus","habilis","boisei",
+    "rudolfensis","ergaster","sapiens")
+brainvolcc <- c( 438 , 452 , 612, 521, 752, 871, 1350 )
+masskg <- c( 37.0 , 35.5 , 34.5 , 41.5 , 55.5 , 61.0 , 53.5 )
+d <- data.frame( species=sppnames , brain=brainvolcc , mass=masskg )
+```
+
+
+
+```{r}
+## R code 6.2
+m6.1 <- lm( brain ~ mass , data=d )
+
+## R code 6.3
+1 - var(resid(m6.1))/var(d$brain)
+```
+
+```{r}
+## R code 6.4
+m6.2 <- lm( brain ~ mass + I(mass^2) , data=d )
+
+## R code 6.5
+m6.3 <- lm( brain ~ mass + I(mass^2) + I(mass^3) , data=d )
+m6.4 <- lm( brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4) ,
+    data=d )
+m6.5 <- lm( brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4) +
+    I(mass^5) , data=d )
+m6.6 <- lm( brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4) +
+    I(mass^5) + I(mass^6) , data=d )
+
+```
+
+```{r}
+## R code 6.6
+m6.7 <- lm( brain ~ 1 , data=d )
+```
+
+Underfit/overfit models (high biased/high variance): the difference is the sensitivity to the exact composition of the sample used to fit the model.
+
+Maximising joint probability superior to maximising average probability. Maximising joint probabilty will help us find the right model. 
+
+Distance to a target. Measuring the *out of sample deviance*
+
+**Information entropy:**
+$$
+H(p) = -E[log(p_i)] = - \sum_{i=1}^{n} p_ilog(p_i)
+$$
+Satisfies 3 criteria of measuing uncertainty:
+
+1) Measurement is a continuous measure
+2) High number of possible events increases uncertainty
+3) Measure of uncertainty should be additive. (e.g. hot or cold and rain or shine - uncertainty over four combinations of these events rain/hot; rain/cold; sun/hot; sun/cold)
+
+```{r}
+## R code 6.9
+p <- c( 0.3 , 0.7 )
+-sum( p*log(p) )
+```
+
+**Kullback Leibler divergence (K-L divergence)**
+
+Divergence is the additional uncertainty induced by using probabilities from one distribution to describe another distribution. 
+
+$$
+D_{KL}(p, q) = \sum_i p_i(log(p_i) -log(q_i)) = \sum_i p_i log \left(\frac{p_i}{q_i}\right) 
+$$
+
+Cross entropy $H(p,q)$ uses probability distribution 1 to predict events of another distribution p. Since divergence is defined as the *additional* entroby induced by using q, divergence is defined as the difference between $H(p)$ (the actual entropy of events) and $H(p,q)$, the additional entropy introduced. 
+
+$$
+D_{KL}(p, q) = H(p,q) - H(p) = \sum_i p_i log(q_i) - (- \sum_i log(p_i)) = - \sum_i p_i(log(q_i) - log(p_i))
+$$
+
+Multiplying average log probability by -1 makes entropy *H* increase from zero as opposed to decrease from zero.
 
 # Quotes
 
@@ -844,3 +1858,18 @@ Stripping away information away about uncertainty leads to over confidence.
 Priors information is more subtle, because parameteres don't always have such clear physical meaning.
 
 Posterior probabilities of parameter values describe the relative compatibility of different states of the world with the data, according to the model.
+
+Page 107-108 - Prediction of the mean and uncertainty around mu_hat based on simulating from joint posterior of the linear model (beta_0 + X*beta_1). Actual predictions of y variable depend also on sigma, the stochastic variation from sigma of the likelihood.
+
+"What is the predictive value of a variable, once I already know all of the other predictive variables"
+
+pg 145: Multicollinearity: We may not anticipate a clash between highly correlated predictors. And therefore we may mistakenly read the posterior distribution to say that neither predictor is important.
+
+ph 146: The absolute magnitude of regression slopes is not always meanginful, because the influence on prediction depends upon the product of the parameeter and the data. Compute or plot predictions, unless you standardise the predictors. *Always plot implied predictions*
+
+pg 149 *Check vovariation among parameters, especially when intervals are extremely wide, so you dont' misinterpret what the model is trying to tell you*
+
+pg 152 Pre treatment vaeriables may mask causal inference of treatment *if excluded from the model*, so we should include them in the model.
+Post treatment varaiables may mask the treatment itself if *included in the model*, so we should exclude them from the model.
+
+Note the model may give better predictions if we include the post treatment variable, it may fit the sample better. But if we care about causal inference, such models are answering the wrong question. Hence we cannot use information criteria for comparison of model validity in this case. It is measuring the wrong metric.
