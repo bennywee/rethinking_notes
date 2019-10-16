@@ -1,0 +1,233 @@
+---
+title: "Chapter 4 Solutions"
+author: "Benjamin Wee"
+output: 
+  html_document:
+    theme: cosmo
+    code_folding: show
+---
+
+```{r message=FALSE, warning=FALSE}
+library(rethinking)
+```
+
+# Chapter 4
+## Easy
+
+$$
+y_i\sim Normal(\mu,\sigma) \\
+\mu\sim Normal(0, 10) \\
+\sigma\sim Uniform(0, 10)
+$$
+
+### 4E1
+$y_i\sim Normal(\mu,\sigma)$ is the likelihood
+
+### 4E2
+2 parameters in the posterior, $\mu$ and $\sigma$
+
+### 4E3
+$$
+Pr(\mu,\sigma|y_i) = \frac{Pr(y_i|\mu,\sigma) Pr(\mu) Pr(\sigma)}{Pr(y_i)} \\
+= \frac{\Pi_i Normal(y_i|\mu,\sigma) Normal(\mu | 0, 10) Uniform(\sigma|0, 10)}{\int\int\Pi_i Pr(y_i)Normal(y_i|\mu,\sigma) Normal(\mu | 0, 10) Uniform(\sigma|0, 10)d\mu d\sigma}
+$$
+
+### 4E4
+$\mu_i = \alpha + \beta x_i$ is the linear model
+
+### 4E5
+3 parameters in the posterior, $\alpha$, $\beta$ and $\sigma$
+
+
+## Medium
+$$
+y_i\sim Normal(\mu,\sigma) \\
+\mu\sim Normal(0, 10) \\
+\sigma\sim Uniform(0, 10)
+$$
+
+### 4M1
+```{r}
+sample_mu <- rnorm(1e4, 0, 10)
+sample_sigma <- runif(1e4, 0, 10)
+y <- rnorm(1e4, sample_mu, sample_sigma)
+```
+
+### 4M2
+```{r}
+model <- alist(y ~ dnorm(mu, sigma),
+               mu ~ dnorm(0, 10),
+               sigma ~ dunif(0, 10))
+```
+
+### 4M3
+$$
+y_i\sim Normal(\mu,\sigma) \\
+\mu = \alpha + \beta x_i \\
+\alpha\sim Normal(0, 50) \\
+\beta\sim Normal(0, 10) \\
+\sigma\sim Uniform(0, 50)
+$$
+
+### 4M4
+$$
+Height_i\sim Normal(\mu,\sigma) \\
+\mu = \alpha + \beta time_i \\
+\alpha\sim Normal(160, 100) \\
+\beta\sim Normal(0, 10) \\
+\sigma\sim Uniform(0, 50)
+$$
+Wide prior for intercept. Height does not have a linear relationship with age/time. Most likely some concave function.
+
+If adolescent students, probably some growth across teenage years. 
+
+### 4M5
+$$
+Height_i\sim Normal(\mu,\sigma) \\
+\mu = \alpha + \beta time_i \\
+\alpha\sim Normal(120, 100) \\
+\beta\sim Normal(2, 10) \\
+\sigma\sim Uniform(0, 50)
+$$
+
+Mean of alpha becomes 120 to reflect average height of first years. Positive mean to slope to reflect overall growth for a year. 
+
+### 4M6
+$$
+Height_i\sim Normal(\mu,\sigma) \\
+\mu = \alpha + \beta time_i \\
+\alpha\sim Normal(120, 100) \\
+\beta\sim Normal(2, 10) \\
+\sigma\sim Uniform(0, 70)
+$$
+
+Set upper bound for variance of height to be 70. Higher than observed upper bound to account for potential variation that was not previously observed (although should probably not have uniform weight on values above 64).
+
+## Hard
+
+### 4H1
+
+Using code model from 4.38 
+
+```{r message=FALSE, warning=FALSE}
+library(rethinking)
+data(Howell1)
+d <- Howell1
+
+# Define univariate linear model
+m4.3 <- map(
+  alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu <- a + b*weight ,
+    a ~ dnorm( 156 , 100 ) ,
+    b ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 50 )
+) ,
+data=d)
+
+missing_data <- as.data.frame(c(46.95, 43.72, 64.78, 32.59, 54.63))
+names(missing_data) <- "weight"
+
+# Simulate expected (mean) heights 
+mu_missing <- link(m4.3, data = missing_data)
+mu_missing_mean <- apply(mu_missing, 2, mean)
+mu_missing_hpdi <- apply(mu_missing, 2, HPDI, prob = 0.89)
+
+print(rbind(mu_missing_mean, mu_missing_hpdi))
+```
+
+### 4H2
+```{r}
+# 4H2a
+library(rethinking)
+data(Howell1)
+d <- Howell1[Howell1$age < 18, ]
+
+model <- map(
+  alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu <- a + b*weight ,
+    a ~ dnorm( 100 , 100 ) ,
+    b ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 50 )
+) ,
+data=d)
+
+precis(model)
+```
+
+```{r}
+# 4H2b
+# Define sequence of weights
+weight.seq <- seq(from = 1, to = 50)
+
+# Calculate mu
+mu <- link(model, data = data.frame(weight = weight.seq))
+
+# Calculate mu.mean
+mu.mean <- apply(mu, 2, mean)
+mu.HPDI <- apply(mu, 2, HPDI, prob = 0.89)
+
+# Simulate heights
+sim.height <- sim(model, data = list(weight=weight.seq))
+height.HPDI <- apply(sim.height, 2, HPDI, prob = 0.89)
+
+# Plot 
+plot(height ~ weight, data = d, col = col.alpha(rangi2, 0.5))
+lines(weight.seq, mu.mean)
+shade(mu.HPDI, weight.seq)
+shade(height.HPDI, weight.seq)
+```
+
+#### 4H3c
+Plotted data does not really have a linear relationship. Maybe add a polynomial regressor to account for concavity in the relationship between height and weight. 
+
+### 4H3
+```{r}
+library(rethinking)
+data(Howell1)
+d <- Howell1
+
+log_model <- map(
+  alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu <- a + b*log(weight),
+    a ~ dnorm( 178 , 100 ) ,
+    b ~ dnorm( 0 , 100 ) ,
+    sigma ~ dunif( 0 , 50 )
+) ,
+data=d)
+
+precis(log_model)
+```
+
+```{r}
+#### 4H3b
+# Define sequence of weights
+weight.seq <- seq(from = 1, to = 70)
+
+# Extract samples from model
+posterior <- extract.samples(log_model, n = 1e5)
+
+# Calculate mu
+mu_link <- function(weight) posterior$a + posterior$b * log(weight)
+mu <- sapply(X = weight.seq, FUN = mu_link)
+
+# Calculate mu.mean
+mu.mean <- apply(mu, 2, mean)
+mu.HPDI <- apply(mu, 2, HPDI, prob = 0.97)
+
+# Simulate heights
+height.link <- function(weight) rnorm(n = nrow(posterior), mean = mu_link(weight), sd = posterior$sigma)
+height.samples <- sapply(weight.seq, FUN = height.link)
+height.HPDI <- apply(height.samples, 2, HPDI, prob = 0.97)
+
+plot( height ~ weight , data=Howell1,
+col=col.alpha(rangi2,0.4) )
+lines(weight.seq, mu.mean)
+shade(mu.HPDI, weight.seq)
+shade(height.HPDI, weight.seq)
+```
+
+
+
