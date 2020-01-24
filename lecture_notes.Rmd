@@ -212,6 +212,68 @@ Treatments effect a bunch of variables at once, so need to think carefully about
 
 You always need theories about the systems to solve the issues. Mere associations won't do it.
 
+
+# Lecture 07
+Can't use ochham's razor in most realistic circumstances. Rarely will we compare models that make the _exact_ same predictions. Rather, we have to make a choice between _tradeoffs_. Some model fits the data better but it's much more complicated. We need a way of managing that tradeoff of fit and complexity or fit and prediction.
+
+Overfitting encodes the sample that we have into the model.
+
+Information: Reduction in uncertainty caused by learning an outcome
+
+# Lecture 08
+A lot of real life inference/prediction problems or learnings don't allow us to train and then test out of sample. Some decision problems require gathering data as you learn. 
+
+Prequential analysis - Data collection strategy is mixed in with the estimation strategy. Data collection is guided by what we just learned. 
+
+'Prequential experimental design'
+
+Actual parameters vs effective number of parameters.
+Parameters all have different relationships to one another
+ 
+Not all parameters have direct relationships to prediction — they have to pass through other parameters
+ 
+Measuring the quantitative distances. Not about 'which model is the best'. We learn more from _comparing_ models and inspecting their differences by their relative distances.
+ 
+ Never average parameters. Only average and ensemble predictions. Information criteria are measured on the prediction scale.
+ 
+ You understand the winning model _better_ when you understand the other models relative to it
+ 
+ dSE -> Standard error of the DIFFERENCE in the distributions of WAICs.
+ 
+ WAICs have SEs and therefore an expected sampling distribution of WAIC implied by the model. 
+ 
+ Comparing two different models: there are two distributions for WAIC and those distributions are _correlated_
+ 
+ Since they are correlated, the distribution of their difference is NOT the same as the difference in their distributions
+ 
+ Don't look at the overlap of SE bars and infer whether two models are different from one another. In any statistical model comparison, you do NOT just look at the overlap in error bars. This is irrelevant to the question or whether the estimates are different from one another.
+ 
+ If dSE crosses zero, might suggest distributions in WAIC overlap
+ 
+ Visualise parameter distributions across models to identify masking effects
+ 
+ Irreconcilable differences in the structure of their models -> average their predictions together.
+ 
+ NEVER average parameter estimates
+ 
+ WAIC is measured on prediction space so its okay to average predictions. Predictions is what the information criteria is judging on.
+ 
+ Only looking at top model under calibrates the risk. Ensemble model does not sweep anything under the rug.
+ 
+
+# Lecture 09
+We're mislead because our sample is _conditional_ on something, it's a subset or subsample of the population
+
+Splitting data is a bad idea -- does not pool information. Model does not learn from the whole sample.
+
+Dummy variables _only_ shifts the intercepts and gives the same slope
+ 
+Don't interpret coefficients. Interactions now rely on more than one parameters. Need to compute the total slope.
+ 
+Look at the distribution of their difference.
+
+Always include all the dummy variables, otherwise you understate uncertainty (i.e get rid of the alpha intercept term)
+
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
 
@@ -224,3 +286,12 @@ Zero is a natural inflection point. There can be still an effect even if the int
  
 If you do not ask exactly the right question and understand the implications of your question in a precise way, the problem is the model will answer it _exactly. And that answer will burn your kingdom to the ground.  L06 28 mins
 > So best approximate the answer to the right question which is often vague than an exact answer to the wrong question which can always be made precise.
+ 
+Information entropy: Two words that we don't understand and we put them together L0724m. BW: Ensembling
+
+# Ideas
+Causal inference: Use Information Criteria
+Prediction: Test out of sample
+
+R^2 not useful in either circumstance. Can have good R^2 but misspecified model. Can have bad R^2 but the _correct_ model. 
+In prediction, fit to the sample is _supposed_ to not be good, it's out of sample that matters.

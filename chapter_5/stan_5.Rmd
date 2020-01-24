@@ -1,0 +1,347 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, message = FALSE, error = FALSE)
+library(dplyr); library(tidyr); library(rstan); library(skimr); library(ggplot2); library(ggthemes)
+theme_set(theme_tufte(base_family = 'sans'))
+```
+
+```{r}
+data('WaffleDivorce', package = 'rethinking')
+d  <- WaffleDivorce; rm(WaffleDivorce)
+```
+
+```{r}
+d <- d %>% 
+  mutate(MedianAgeMarriage_z = (MedianAgeMarriage - mean(MedianAgeMarriage)) / 
+                               sd(MedianAgeMarriage),
+         Marriage_z = (Marriage - mean(Marriage)) / sd(Marriage))
+```
+
+```{stan output.var="m05_1"}
+data {
+  int<lower=0> N;
+  vector[N] divorce;
+  vector[N] median_age_z;
+}
+parameters {
+  real a;
+  real bA;
+  real<lower=0, upper=10> sigma;
+}
+model {
+  vector[N] mu = a + median_age_z * bA;
+  target += normal_lpdf(divorce | mu, sigma);
+  
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(bA | 0, 10);
+}
+```
+
+```{stan output.var="m05_1"}
+data{
+  int<lower=0> N;
+  vector[N] divorce;
+  vector[N] median_age_z;
+}
+parameters{
+  real a;
+  real bA;
+  real<lower=0, upper=10>sigma;
+}
+model{
+  vector[N] mu = a + median_age_z * bA;
+  target += normal_lpdf(divorce| mu, sigma);
+
+  target+= normal_lpdf(a | 10, 10);
+  target+= normal_lpdf(bA| 0, 1);
+}
+```
+
+```{r}
+data = list(N=nrow(d), 
+            divorce = d$Divorce,
+            median_age_z = d$MedianAgeMarriage_z)
+
+fit_5_1 = sampling(m05_1, data = data, iter = 1000, chains = 2, cores = 2)
+```
+```{r}
+print(fit_5_1, probs = c(0.10, 0.5, 0.9))
+```
+
+```{stan output.var="m_5_2"}
+data{
+  int N;
+  vector[N] divorce;
+  vector[N] marriage_z;
+}
+parameters{
+  real a;
+  real bM;
+  real<lower=0> sigma;
+}
+model{
+  vector[N] mu = a + marriage_z * bM;
+  
+  target += normal_lpdf(divorce | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(bM | 0, 10);
+}
+```
+
+```{r}
+data = list(N = nrow(d),
+            divorce = d$Divorce,
+            marriage_z = d$Marriage_z)
+
+fit_5_2 = sampling(m_5_2, data = data, iter = 1000, chains = 2, cores = 2)
+```
+
+```{r}
+print(fit_5_2, probs = c(0.10, 0.5, 0.9))
+```
+
+```{stan output.var="m_5_3"}
+data{
+  int N;
+  vector[N] divorce;
+  vector[N] marriage_z;
+  vector[N] median_age_z;
+}
+parameters{
+  real a;
+  real bM;
+  real bA;
+  real<lower=0> sigma;
+}
+model{
+  vector[N] mu = a + marriage_z * bM + median_age_z * bA;
+  target += normal_lpdf(divorce | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(bM | 0, 10);
+  target += normal_lpdf(bA | 0, 10);
+  target += exponential_lpdf(sigma | 1);
+}
+```
+
+```{r}
+data = list(N = nrow(d),
+            divorce = d$Marriage,
+            marriage_z = d$Marriage_z,
+            median_age_z = d$MedianAgeMarriage_z)
+
+fit_5_3 = sampling(m_5_3, data = data, iter = 1000, chains = 2, cores = 2)
+```
+
+```{r}
+print(fit_5_3, probs = c(0.10, 0.5, 0.9))
+```
+
+```{stan output.var="m05_4"}
+data {
+  int<lower=1> N;
+  vector[N] A_z;
+  vector[N] M_z;
+} 
+parameters {
+  real a;
+  real b;
+  real<lower=0> sigma;
+}
+model {
+  vector[N] mu = a + A_z * b;
+  target += normal_lpdf(M_z | mu, sigma);
+  target += normal_lpdf(a | 0, 10);
+  target += normal_lpdf(b | 0, 10);
+  target += exponential_lpdf(sigma | 1);
+}
+```
+
+```{r}
+dat <- list(
+  N = NROW(d),
+  A_z = d$MedianAgeMarriage_z,
+  M_z = d$Marriage_z
+)
+
+fit05_4 <- sampling(m05_4, data = dat, iter = 1000, chains = 2, cores = 2)
+```
+
+# Chapter Questions
+
+## Hard
+
+### Q1
+```{r}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, message = FALSE, error = FALSE)
+library(dplyr); library(tidyr); library(rstan); library(skimr); library(ggplot2); library(ggthemes)
+theme_set(theme_tufte(base_family = 'sans'))
+
+df = read.csv('/Users/benjaminwee/Documents/courses/resources/Rethinking/Data/foxes.csv')
+```
+
+```{stan output.var='m5h_1'}
+data{
+  int<lower=1> N;
+  vector[N] area;
+  vector[N] weight;
+}
+parameters{
+  real a;
+  real b;
+  real<lower=0> sigma;
+}
+model{
+  vector[N] mu = a + area * b;
+  target += normal_lpdf(weight | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(b | 0, 1);
+  target += exponential_lpdf(sigma | 1);
+}
+```
+
+```{r}
+dt <- list(N = nrow(df),
+             weight = df$weight,
+             area = df$area)
+
+fit_m5h_1 <- sampling(m5h_1, data = dt, iter = 1000, chains = 2, cores = 2)
+```
+
+```{r}
+print(fit_m5h_1, probs = c(0.10, 0.5, 0.9))
+```
+
+```{r}
+traceplot(fit_m5h_1, pars = c("a", "b", "sigma"), inc_warmup = TRUE, nrow = 3)
+```
+
+```{stan output.var='m5h_1_1'}
+data{
+  int<lower=1> N;
+  vector[N] groupsize;
+  vector[N] weight;
+}
+parameters{
+  real a;
+  real b_s;
+  real<lower=1> sigma;
+}
+model{
+  vector[N] mu = a + groupsize * b_s;
+  target += normal_lpdf(weight | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(b_s | 0, 1);
+  target += exponential_lpdf(sigma | 1);
+}
+```
+
+```{r}
+dt_h1_1 <- list(N = nrow(df),
+                groupsize = df$groupsize,
+                weight = df$weight)
+
+fit_m5h_2 <- sampling(m5h_1_1, data = dt_h1_1, iter = 1000, chains = 2, cores = 2)
+```
+
+```{r}
+print(fit_m5h_2, probs = c(0.10, 0.5, 0.9))
+```
+
+
+```{r}
+traceplot(fit_m5h_2, pars = c("a", "b_s", "sigma"), inc_warmup = TRUE, nrow = 3)
+```
+
+### Q2
+```{stan output.var='m5h_2'}
+data{
+  int<lower=1> N;
+  vector[N] groupsize;
+  vector[N] area;
+  vector[N] weight;
+}
+parameters{
+  real a;
+  real b_s;
+  real b_a;
+  real<lower=1> sigma;
+}
+model{
+  vector[N] mu = a + groupsize * b_s + area * b_a;
+  target += normal_lpdf(weight | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(b_s | 0, 1);
+  target += normal_lpdf(b_a | 0, 1);
+  target += exponential_lpdf(sigma | 1);
+}
+```
+
+```{r}
+dt_h2 <- list(N = nrow(df),
+                groupsize = df$groupsize,
+                area = df$area,
+                weight = df$weight)
+
+fit_m5h2 <- sampling(m5h_2, data = dt_h2, iter = 1000, chains = 2, cores = 2)
+```
+
+```{r}
+print(fit_m5h2, probs = c(0.10, 0.5, 0.9))
+```
+
+
+```{r}
+traceplot(fit_m5h2, pars = c("a", "b_s", "sigma"), inc_warmup = TRUE, nrow = 3)
+```
+
+### Q3
+```{stan output.var='m5h_3'}
+data{
+  int<lower=1> N;
+  vector[N] groupsize;
+  vector[N] area;
+  vector[N] avgfood;
+  vector[N] weight;
+}
+parameters{
+  real a;
+  real b_s;
+  real b_a;
+  real b_f;
+  real<lower=1> sigma;
+}
+model{
+  vector[N] mu = a + groupsize * b_s + area * b_a + avgfood * b_f;
+  target += normal_lpdf(weight | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(b_s | 0, 1);
+  target += normal_lpdf(b_a | 0, 1);
+  target += normal_lpdf(b_f | 0, 1);
+  target += exponential_lpdf(sigma | 1);
+}
+```
+
+```{r}
+dt_h3 <- list(N = nrow(df),
+                groupsize = df$groupsize,
+                area = df$area,
+                avgfood = df$avgfood,
+                weight = df$weight)
+
+fit_m5h3 <- sampling(m5h_3, data = dt_h3, iter = 1000, chains = 2, cores = 2)
+```
+
+```{r}
+print(fit_m5h3, probs = c(0.10, 0.5, 0.9))
+```
+
+
+```{r}
+traceplot(fit_m5h3, pars = c("a", "b_s", 'b_a', 'b_f', "sigma"), inc_warmup = TRUE, nrow = 5)
+```
