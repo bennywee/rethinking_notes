@@ -220,6 +220,8 @@ Overfitting encodes the sample that we have into the model.
 
 Information: Reduction in uncertainty caused by learning an outcome
 
+You understand the winning model better when you _compare_ and _understand_ why the other models performed worse relative to it. Don't discard, use all the information. 
+
 # Lecture 08
 A lot of real life inference/prediction problems or learnings don't allow us to train and then test out of sample. Some decision problems require gathering data as you learn. 
 

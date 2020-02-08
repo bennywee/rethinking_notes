@@ -1,0 +1,356 @@
+---
+title: "Chapter 7 - Stan"
+author: "Benjamin Wee"
+output: html_document
+---
+
+# Hard
+
+## 7H1
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      error = FALSE)
+
+library(tidyverse)
+library(rstan)
+
+data('tulips', package = 'rethinking')
+tulips
+```
+
+```{r}
+# Centre predictors and create dummy variables
+tulips <- tulips %>% 
+             mutate(water = water - mean(water),
+                    shade = shade - mean(shade),
+                    bed_a = ifelse(bed == 'a', 1, 0),
+                    bed_b = ifelse(bed == 'b', 1, 0),
+                    bed_c = ifelse(bed == 'c', 1, 0)) %>% 
+             select(-bed)
+
+tulips
+```
+
+```{stan output.var=m_h1}
+data{
+  int N;
+  vector[N] blooms;
+  vector[N] water;
+  vector[N] shade;
+  vector<lower=0, upper=1>[N] bed_a;
+  vector<lower=0, upper=1>[N] bed_b;
+  vector<lower=0, upper=1>[N] bed_c;
+}
+parameters{
+  real bW;
+  real bS;
+  real bBa;
+  real bBb;
+  real bBc;
+  real<lower=0, upper =100> sigma;
+}
+model{
+  vector[N] mu = bW*water + bS*shade + bBa*bed_a + bBb*bed_b + bBc*bed_c;
+  target += normal_lpdf(blooms | mu, sigma);
+  target += normal_lpdf(bW | 0, 100);
+  target += normal_lpdf(bS | 0, 100);
+  target += normal_lpdf(bBa | 0, 1);
+  target += normal_lpdf(bBb | 0, 1);
+  target += normal_lpdf(bBc | 0, 1);
+} 
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  for(n in 1:N) {
+  mu[n] = bW*water[n] + bS*shade[n] + bBa*bed_a[n] + bBb*bed_b[n] + bBc*bed_c[n];
+  log_lik[n] = normal_lpdf(blooms[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+```{r}
+data_h1 <- list(
+  N = NROW(tulips),
+  blooms = tulips$blooms,
+  water= tulips$water,
+  shade = tulips$shade,
+  bed_a = tulips$bed_a,
+  bed_b = tulips$bed_b,
+  bed_c = tulips$bed_c
+)
+
+fitm_h1 <- sampling(m_h1, data = data_h1, iter = 10000, chains = 4, cores = 4)
+```
+
+```{stan output.var=mh1_2}
+data{
+  int N;
+  vector[N] blooms;
+  vector[N] water;
+  vector[N] shade;
+}
+parameters{
+  real a;
+  real bW;
+  real bS;
+  real<lower=0, upper = 100> sigma;
+}
+model{
+  vector[N] mu = a + bW*water + bS*shade;
+  target += normal_lpdf(blooms | mu, sigma);
+  target += normal_lpdf(a | 0, 100);
+  target += normal_lpdf(bW | 0, 100);
+  target += normal_lpdf(bS | 0, 100);
+} 
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  for(n in 1:N) {
+  mu[n] = a + bW*water[n] + bS*shade[n];
+  log_lik[n] = normal_lpdf(blooms[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+```{r}
+data_h2 <- list(
+  N = NROW(tulips),
+  blooms = tulips$blooms,
+  water= tulips$water,
+  shade = tulips$shade
+)
+
+fitm_h1_2 <- sampling(mh1_2, data = data_h2, iter = 10000, chains = 4, cores = 4)
+```
+
+## 7H2
+```{r}
+# compare models
+library(loo)
+
+lok_lik_mh1 <- extract_log_lik(fitm_h1, merge_chains = FALSE)
+waic_mh1 <- waic(lok_lik_mh1)
+
+lok_lik_mh1_2 <- extract_log_lik(fitm_h1_2, merge_chains = FALSE)
+waic_mh1_2 <- waic(lok_lik_mh1_2)
+
+compare_models <- compare(waic_mh1, waic_mh1_2)
+compare_models
+```
+
+## 7H3
+```{r}
+data('rugged', package = 'rethinking')
+rugged
+```
+ 
+```{r}
+# Data Transformations
+
+# Log outcom
+rugged$log_gdp <- log(rugged$rgdppc_2000)
+
+# Filter out countries without GDP data
+rugged_gdp <- rugged %>% filter(!is.na(rgdppc_2000))
+
+# Create df without Seychelles
+rugged_nos <- rugged_gdp %>% filter(country != 'Seychelles')
+```
+
+
+### Model with interactive term
+```{stan output.var=mh3_1}
+data{
+  int N;
+  vector[N] rugged;
+  vector[N] cont_africa;
+  vector[N] log_gdp;
+}
+parameters{
+  real a;
+  real bR; 
+  real bA;
+  real bAR;
+  real<lower=0, upper=10> sigma;
+}
+model{
+  vector[N] gamma;
+  vector[N] mu;
+  
+  for (i in 1:N){
+  gamma[i] = bR + bAR*cont_africa[i];
+  mu[i] = a + gamma[i] * rugged[i] + bA * cont_africa[i];
+  }
+  
+  target += normal_lpdf(log_gdp | mu, sigma);
+  target += normal_lpdf(a | 8, 100);
+  target += normal_lpdf(bR | 0, 1);
+  target += normal_lpdf(bAR | 0, 1);
+  target += normal_lpdf(bA | 0, 1);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  vector[N] gamma;
+  for (n in 1:N){
+  gamma[n] = bR + bAR*cont_africa[n];
+  mu[n] = a + gamma[n] * rugged[n] + bA * cont_africa[n];
+  log_lik[n] = normal_lpdf(log_gdp[n] | mu[n], sigma);
+  }
+  }
+}
+
+```
+
+### Fit on dataset with and without Seychelles
+```{r}
+# With Seychelles
+data_h3_s <- list(
+  N = NROW(rugged_gdp),
+  rugged = rugged_gdp$rugged,
+  cont_africa= rugged_gdp$cont_africa,
+  log_gdp = rugged_gdp$log_gdp
+)
+
+fitm_h3_1 <- sampling(mh3_1, data = data_h3_s, iter = 10000, chains = 4, cores = 4)
+
+# Without Seychelles
+data_h3_nos <- list(
+  N = NROW(rugged_nos),
+  rugged = rugged_nos$rugged,
+  cont_africa= rugged_nos$cont_africa,
+  log_gdp = rugged_nos$log_gdp
+)
+
+fitm_h3_2 <- sampling(mh3_1, data = data_h3_nos, iter = 10000, chains = 4, cores = 4)
+```
+
+```{r}
+fitm_h3_1
+```
+
+
+```{r}
+fitm_h3_2
+```
+
+The effect of ruggedness has decreased and the interaction effect is smaller. Taking out Seychelles has redcued the resillience of Africa to rugged terrain in terms of log GDP. The overall slope is smaller.
+
+#### 7H3.C
+```{stan output.var=mh3_c1}
+data{
+  int N;
+  vector[N] rugged;
+  vector[N] log_gdp;
+}
+parameters{
+  real a;
+  real bR; 
+  real<lower=0, upper=10> sigma;
+}
+model{
+  vector[N] mu = a + bR * rugged;
+  target += normal_lpdf(log_gdp | mu, sigma);
+  target += normal_lpdf(a | 8, 100);
+  target += normal_lpdf(bR | 0, 1);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  for (n in 1:N){
+  mu[n] = a + bR * rugged[n];
+  log_lik[n] = normal_lpdf(log_gdp[n] | mu[n], sigma);
+  }
+  }
+}
+
+```
+
+
+```{stan output.var=mh3_c2}
+data{
+  int N;
+  vector[N] rugged;
+  vector[N] cont_africa;
+  vector[N] log_gdp;
+}
+parameters{
+  real a;
+  real bR; 
+  real bA;
+  real<lower=0, upper=10> sigma;
+}
+model{
+
+  vector[N] mu =  a + bR * rugged + bA * cont_africa;
+  
+  target += normal_lpdf(log_gdp | mu, sigma);
+  target += normal_lpdf(a | 8, 100);
+  target += normal_lpdf(bR | 0, 1);
+  target += normal_lpdf(bA | 0, 1);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  for (n in 1:N){
+  mu[n] = a + bR * rugged[n] + bA * cont_africa[n];
+  log_lik[n] = normal_lpdf(log_gdp[n] | mu[n], sigma);
+  }
+  }
+}
+
+```
+
+```{r}
+data_mh3_c1 <- list(
+  N = NROW(rugged_nos),
+  rugged = rugged_nos$rugged,
+  log_gdp = rugged_nos$log_gdp
+)
+
+fitm_mh3_c1 <- sampling(mh3_c1, data = data_mh3_c1, iter = 10000, chains = 4, cores = 4)
+```
+
+```{r}
+data_mh3_c2 <- list(
+  N = NROW(rugged_nos),
+  rugged = rugged_nos$rugged,
+  cont_africa = rugged_nos$cont_africa,
+  log_gdp = rugged_nos$log_gdp
+)
+
+fitm_mh3_c2 <- sampling(mh3_c2, data = data_mh3_c2, iter = 10000, chains = 4, cores = 4)
+```
+
+```{r warning=FALSE}
+# fitm_mh3_c1  Rugged
+# fitm_mh3_c2  Rugged, cont_africa
+# fitm_h3_2    Rugged, cont_africa, interaction
+
+# compare models
+library(loo)
+
+lok_lik_mh3_c1 <- extract_log_lik(fitm_mh3_c1, merge_chains = FALSE)
+waic_mh3_c1 <- waic(lok_lik_mh3_c1)
+
+lok_lik_mh3_c2 <- extract_log_lik(fitm_mh3_c2, merge_chains = FALSE)
+waic_mh3_c2 <- waic(lok_lik_mh3_c2)
+
+lok_lik_mh3_2 <- extract_log_lik(fitm_h3_2, merge_chains = FALSE)
+waic_mh3_2 <- waic(lok_lik_mh3_2)
+
+compare_models <- compare(waic_mh3_c1, waic_mh3_c2, waic_mh3_2)
+compare_models
+```
+
+Inferences remain the same, there still exists a significant difference between continents when measuring log GDP with respect to ruggedness. Ommitting African dummy variable and pooling estimates has the weakest WAIC estimate and the least weight.

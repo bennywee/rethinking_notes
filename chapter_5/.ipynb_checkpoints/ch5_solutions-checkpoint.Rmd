@@ -1,0 +1,38 @@
+---
+title: "Chapter 5 Solutions"
+author: "Benjamin Wee"
+output: 
+  html_document:
+    theme: cosmo
+    code_folding: show
+---
+
+# Chapter 5
+## Easy
+### 5E1
+$$
+\mu_i = \beta_x x_i + \beta_z z_i \\
+\mu_i = \alpha + \beta_x x_i + \beta_z z_i
+$$
+
+### 5E2
+$$
+diversity = \alpha + \beta_1 latitude + \beta_2 PlantDiversity
+$$
+
+### 5E3
+$$
+diversity = \alpha + \beta_1 latitude + \beta_2 PlantDiversity
+$$
+
+### 5E4
+$$ 
+\mu_i = \alpha + \beta_A A_i + \beta_B B_i + \beta_D D_i \\
+\mu_i = \alpha + \beta_B B_i + \beta_C C_i + \beta_D D_i \\
+\mu_i = \alpha_A A_i + \alpha_B B_i + \alpha_C C_i + \alpha_D D_i \\
+$$
+
+## Medium
+### 5M1
+n = 1e4
+

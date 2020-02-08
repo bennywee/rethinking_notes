@@ -3,8 +3,6 @@ title: "Chapter 5 - Stan"
 output: html_notebook
 ---
 
-Experimenting with textbook examples from 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, 
                       warning = FALSE, message = FALSE, error = FALSE)
@@ -180,15 +178,8 @@ fit05_4 <- sampling(m05_4, data = dat, iter = 1000, chains = 2, cores = 2)
 ### Q1
 ```{r}
 knitr::opts_chunk$set(echo = TRUE, 
-                      warning = FALSE, 
-                      message = FALSE, 
-                      error = FALSE)
-library(dplyr)
-library(tidyr) 
-library(rstan) 
-library(skimr)
-library(ggplot2)
-library(ggthemes)
+                      warning = FALSE, message = FALSE, error = FALSE)
+library(dplyr); library(tidyr); library(rstan); library(skimr); library(ggplot2); library(ggthemes)
 theme_set(theme_tufte(base_family = 'sans'))
 
 df = read.csv('/Users/benjaminwee/Documents/courses/resources/Rethinking/Data/foxes.csv')
