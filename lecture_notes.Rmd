@@ -276,6 +276,70 @@ Look at the distribution of their difference.
 
 Always include all the dummy variables, otherwise you understate uncertainty (i.e get rid of the alpha intercept term)
 
+# Lecture 10
+Convergence to target distribution. That's the objective.
+
+Need MCMC because can't integrate posterior distribution
+
+Maximisation is not a good strategy in high dimensions -- must have full distribution. **In high dimensional probability distributions, most of the probability mass is not at the maximum.** This is counterintuitive. It is not near the mode. Concentration of measure. Need the _typical set_ -- where the mass is. 
+
+Can't describe posterior from its peak. Max or min does not work in complex systems. 
+
+Mode at the centre of the doughnut distribution.
+
+Gibbs sampling inefficient when models have lots of parameters because they are usually highly correlated.
+
+Log of gaussian pdf gives a parabolic bowel. Since a gaussian distribution is an exponentiated porabola.
+
+Can tune HMC by hand if it loops around and eats its own tail (resulting in correlated samples since it ends up where it started)-- leap frog steps tuning. Hard to do in high dimensions.
+
+No u-turn sampler Can simulate in both directions -- means you don't have to tune the number of leap frog steps. Tries to figure out when it's turning around.
+
+Latent variable models - multiple factors --> Results in multimodel distributions. Anything with labelling. 
+
+# Lecture 11
+
+## MCMC
+
+**Check the chain** -- traceplot
+
+Warmup adapts the step size, fundamentally different from burn in. Figuring out how to efficiently explore this target. It's trying out proposals and tuning the acceptance weight.
+
+There's always a little bit of autocorrelation in the samples. The  paths aren't completely independent of each other since there is a destination and origin. Redundant information in the sequential sample. 
+
+n_eff: Calculated by looking at the correlation between subsequent samples and does a statistical adjustment to say effectively statistically speaking: if we had a chain where subsequent samples were perfectly uncorrelated with one another, how long would that chain be before it gave you the same information as this one. 
+
+Imagine a chain where each subsequent sample is perfectly incorrelated with the previous sample (never happens). Say you run that chain 200 time steps. When you see n_eff 200 on a real stand chain, that means that's how long the analogous uncorrelated change would need to have been run. It's a comparison measure to the 'perfect chain'. Gives an idea of the inefficiency of the chain in terms of information. 
+
+Be alarmed if: n_eff/n<1
+
+R-hat: An f-statistic, a ratio of variances. There is variation _within_ each chain and variance _between_ chains. As the chains run long, you want to variance between chains to be the same as the variance between chains. This should be the case since the chains are being drawn from the same target distribution.
+If Rhat is slightly greater than 1, trying running chain longer.
+
+**Both rhat and n_eff could look fine but the chain still awful**
+
+Flat priors mean flat for infinity. So the frictionless bowel will go out to infinity and thus the particle will seek infinity. Set a prior that rules out infinity.
+
+MH looks like a random walk even when its working. It won't take wild samples but it doesn't mean you're getting the right inferences. 
+
+When chain is broken, warmup is real slow (which is a good sign that something is wrong)b . Check expression tree in stan manual.
+
+If chains not mixing, check if number of parameters matches number of priors.
+
+## Entropy
+
+Philosophical justification for a set of common choices. One of many ways to justify choices in GLM.
+
+Conservative choices (least assumptions) for choosing likelihood functions.
+
+Why is safe flat, why is that more conservative, why is it more plausible? There are vastly more ways to get even distributions. Whatever happens is more likely to have that shape. 
+
+Information entropy: The formula for entropy falls out of the normalised counts of unique arrangements that give a distribution. Information entropy gives us a way to compare relative plausibilities of different distributions - the numer of unique arrangements given.
+
+Jaynes: Distribution with largest entropy is distribution most consistent with stated assumptions (can happen the largest number of ways). 
+
+Minimises information divergence
+
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
 
