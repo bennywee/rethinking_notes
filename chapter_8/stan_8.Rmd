@@ -1,0 +1,575 @@
+---
+title: "Chapter 8 - Stan"
+author: "Benjamin Wee"
+output: html_document
+---
+
+# Medium
+
+## 8M1
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(rethinking)
+data('rugged', package = 'rethinking')
+
+# Log outcom
+rugged$log_gdp <- log(rugged$rgdppc_2000)
+
+# Filter out countries without GDP data
+rugged_gdp <- rugged %>% filter(!is.na(rgdppc_2000))
+```
+
+Uniform Prior
+```{stan output.var=mm1_1}
+data {
+  int N;
+  vector[N] rugged;
+  vector[N] cont_africa;
+  vector[N] log_gdp;
+}
+parameters{
+  real a;
+  real bR;
+  real bA;
+  real bAR;
+  real<lower=0, upper=10> sigma;
+}
+model{
+  vector[N] gamma;
+  vector[N] mu;
+  
+  for (i in 1:N){
+  gamma[i] = bR + bAR * cont_africa[i];
+  mu[i] = a + gamma[i] * rugged[i] + bA * cont_africa[i];
+  }
+  
+  target += normal_lpdf(log_gdp | mu, sigma);
+  target += normal_lpdf(a | 8, 100);
+  target += normal_lpdf(bR | 0, 10);
+  target += normal_lpdf(bAR | 0, 10);
+  target += normal_lpdf(bA | 0, 10);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  vector[N] gamma;
+  for (n in 1:N){
+  gamma[n] = bR + bAR*cont_africa[n];
+  mu[n] = a + gamma[n] * rugged[n] + bA * cont_africa[n];
+  log_lik[n] = normal_lpdf(log_gdp[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+Exponential
+```{stan output.var=mm1_2}
+data {
+  int N;
+  vector[N] rugged;
+  vector[N] cont_africa;
+  vector[N] log_gdp;
+}
+parameters{
+  real a;
+  real bR;
+  real bA;
+  real bAR;
+  real<lower=0> sigma;
+}
+model{
+  vector[N] gamma;
+  vector[N] mu;
+  
+  for (i in 1:N){
+  gamma[i] = bR + bAR * cont_africa[i];
+  mu[i] = a + gamma[i] * rugged[i] + bA * cont_africa[i];
+  }
+  
+  target += normal_lpdf(log_gdp | mu, sigma);
+  target += normal_lpdf(a | 8, 100);
+  target += normal_lpdf(bR | 0, 10);
+  target += normal_lpdf(bAR | 0, 10);
+  target += normal_lpdf(bA | 0, 10);
+  target += exponential_lpdf(sigma | 1);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  vector[N] gamma;
+  for (n in 1:N){
+  gamma[n] = bR + bAR*cont_africa[n];
+  mu[n] = a + gamma[n] * rugged[n] + bA * cont_africa[n];
+  log_lik[n] = normal_lpdf(log_gdp[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+Sample
+```{r}
+data_m1 <- list(
+  N = NROW(rugged_gdp),
+  rugged = rugged_gdp$rugged,
+  cont_africa= rugged_gdp$cont_africa,
+  log_gdp = rugged_gdp$log_gdp
+)
+
+fitm_m1_1 <- sampling(mm1_1, data = data_m1, iter = 20000, chains = 4, cores = 4)
+fitm_m1_2 <- sampling(mm1_2, data = data_m1, iter = 20000, chains = 4, cores = 4)
+
+```
+
+```{r}
+fitm_m1_1
+```
+
+```{r}
+fitm_m1_2
+```
+
+Mean and overall shape of sigma posterior about the same. Priors are quite weak.
+
+## 8M2
+
+Exponential
+```{stan output.var=mm2_1}
+data {
+  int N;
+  vector[N] rugged;
+  vector[N] cont_africa;
+  vector[N] log_gdp;
+}
+parameters{
+  real a;
+  real bR;
+  real bA;
+  real bAR;
+  real<lower=0> sigma;
+}
+model{
+  vector[N] gamma;
+  vector[N] mu;
+  
+  for (i in 1:N){
+  gamma[i] = bR + bAR * cont_africa[i];
+  mu[i] = a + gamma[i] * rugged[i] + bA * cont_africa[i];
+  }
+  
+  target += normal_lpdf(log_gdp | mu, sigma);
+  target += normal_lpdf(a | 8, 100);
+  target += normal_lpdf(bR | 0, 10);
+  target += normal_lpdf(bAR | 0, 10);
+  target += normal_lpdf(bA | 0, 10);
+  target += exponential_lpdf(sigma | 0.1);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  vector[N] gamma;
+  for (n in 1:N){
+  gamma[n] = bR + bAR*cont_africa[n];
+  mu[n] = a + gamma[n] * rugged[n] + bA * cont_africa[n];
+  log_lik[n] = normal_lpdf(log_gdp[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+Half cauchy
+```{stan output.var=mm2_2}
+data {
+  int N;
+  vector[N] rugged;
+  vector[N] cont_africa;
+  vector[N] log_gdp;
+}
+parameters{
+  real a;
+  real bR;
+  real bA;
+  real bAR;
+  real<lower=0> sigma;
+}
+model{
+  vector[N] gamma;
+  vector[N] mu;
+  
+  for (i in 1:N){
+  gamma[i] = bR + bAR * cont_africa[i];
+  mu[i] = a + gamma[i] * rugged[i] + bA * cont_africa[i];
+  }
+  
+  target += normal_lpdf(log_gdp | mu, sigma);
+  target += normal_lpdf(a | 8, 100);
+  target += normal_lpdf(bR | 0, 10);
+  target += normal_lpdf(bAR | 0, 10);
+  target += normal_lpdf(bA | 0, 10);
+  target += cauchy_lpdf(sigma | 0, 0.1);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  vector[N] gamma;
+  for (n in 1:N){
+  gamma[n] = bR + bAR*cont_africa[n];
+  mu[n] = a + gamma[n] * rugged[n] + bA * cont_africa[n];
+  log_lik[n] = normal_lpdf(log_gdp[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+```{r}
+fitm_m2_1 <- sampling(mm2_1, data = data_m1, iter = 20000, chains = 4, cores = 4)
+fitm_m2_2 <- sampling(mm2_2, data = data_m1, iter = 20000, chains = 4, cores = 4)
+```
+
+```{r}
+fitm_m2_1
+```
+
+```{r}
+fitm_m2_2
+```
+
+## 8M3
+```{r}
+fitm_m3_1<- sampling(mm2_2, data = data_m1, iter = 2000, chains = 4, cores = 4, warmup = 500)
+```
+
+```{r}
+fitm_m3_2<- sampling(mm2_2, data = data_m1, iter = 2000, chains = 4, cores = 4, warmup=100)
+```
+
+# Hard
+
+## 8H1
+
+Can get stan code directly from `stancode()` function
+```{r}
+mp <- map2stan(
+  alist(
+    a ~ dnorm(0,1),
+    b ~ dcauchy(0,1)
+  ),
+  data=list(y=1),
+  start=list(a=0,b=0),
+  iter=1e4, warmup=100 , WAIC=FALSE )
+
+stancode(mp)
+```
+
+```{stan output.var=mh_1}
+data{
+    int<lower=1> N;
+}
+parameters{
+    real a;
+    real b;
+}
+model{
+    b ~ cauchy( 0 , 1 );
+    a ~ normal( 0 , 1 );
+}
+generated quantities{
+    real dev;
+    dev = 0;
+}
+```
+
+
+## 8H2
+Taken from <stan code translation. Adding generated quantities section to do WAIC comparison.
+```{stan output.var=mh_2_1}
+data {
+  int<lower=0> N;
+  vector[N] divorce;
+  vector[N] median_age_z;
+}
+parameters {
+  real a;
+  real bA;
+  real<lower=0, upper=10> sigma;
+}
+model {
+  vector[N] mu = a + median_age_z * bA;
+  target += normal_lpdf(divorce | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(bA | 0, 10);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  for (n in 1:N){
+  mu[n] = a + median_age_z[n] * bA;
+  log_lik[n] = normal_lpdf(divorce[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+```{stan output.var=mh_2_2}
+data {
+  int N;
+  vector[N] divorce;
+  vector[N] marriage_z;
+}
+parameters {
+  real a;
+  real bM;
+  real<lower=0> sigma;
+}
+model {
+  vector[N] mu = a + marriage_z * bM;
+  target += normal_lpdf(divorce | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(bM | 0, 10);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  for (n in 1:N){
+  mu[n] = a + marriage_z[n] * bM;
+  log_lik[n] = normal_lpdf(divorce[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+```{stan output.var=mh_2_3}
+data {
+  int N;
+  vector[N] divorce;
+  vector[N] marriage_z;
+  vector[N] median_age_z;
+}
+parameters {
+  real a;
+  real bA;
+  real bM;
+  real<lower=0> sigma;
+}
+model {
+  vector[N] mu = a + median_age_z * bA + marriage_z * bM;
+  target += normal_lpdf(divorce | mu, sigma);
+  target += normal_lpdf(a | 10, 10);
+  target += normal_lpdf(bA | 0, 10);
+  target += normal_lpdf(bM | 0, 10);
+  target += exponential_lpdf(sigma | 1);
+}
+generated quantities{
+  vector[N] log_lik;
+  {
+  vector[N] mu;
+  for (n in 1:N){
+  mu[n] = a + median_age_z[n] * bA + marriage_z[n] * bM;;
+  log_lik[n] = normal_lpdf(divorce[n] | mu[n], sigma);
+  }
+  }
+}
+```
+
+```{r}
+data('WaffleDivorce', package = 'rethinking')
+
+WaffleDivorce <- WaffleDivorce %>% 
+  mutate(MedianAgeMarriage_z = (MedianAgeMarriage - mean(MedianAgeMarriage)) / sd(MedianAgeMarriage),
+         Marriage_z = (Marriage - mean(Marriage)) / sd(Marriage))
+
+data_mh2 <- list(
+  N = NROW(WaffleDivorce),
+  divorce = WaffleDivorce$Divorce,
+  median_age_z = WaffleDivorce$MedianAgeMarriage_z,
+  marriage_z = WaffleDivorce$Marriage_z
+
+)
+
+fitm_mh_2_1 <- sampling(mh_2_1, data = data_mh2, iter = 2000, chains = 4, cores = 4)
+fitm_mh_2_2 <- sampling(mh_2_2, data = data_mh2, iter = 2000, chains = 4, cores = 4)
+fitm_mh_2_3 <- sampling(mh_2_3, data = data_mh2, iter = 2000, chains = 4, cores = 4)
+
+```
+
+```{r warning=FALSE}
+# compare models
+library(loo)
+
+lok_lik_mh_2_1 <- extract_log_lik(fitm_mh_2_1, merge_chains = FALSE)
+waic_mh_2_1 <- waic(lok_lik_mh_2_1)
+
+lok_lik_mh_2_2 <- extract_log_lik(fitm_mh_2_2, merge_chains = FALSE)
+waic_mh_2_2<- waic(lok_lik_mh_2_2)
+
+lok_lik_mh_2_3 <- extract_log_lik(fitm_mh_2_3, merge_chains = FALSE)
+waic_mh_2_3 <- waic(lok_lik_mh_2_3)
+
+compare_models <- compare(waic_mh_2_1, waic_mh_2_2, waic_mh_2_3)
+compare_models
+```
+
+## 8H3
+```{r}
+## R code 8.21
+N <- 100                          # number of individuals
+height <- rnorm(N,10,2)           # sim total height of each
+leg_prop <- runif(N,0.4,0.5)      # leg as proportion of height
+leg_left <- leg_prop*height +     # sim left leg as proportion + error
+    rnorm( N , 0 , 0.02 )
+leg_right <- leg_prop*height +    # sim right leg as proportion + error
+    rnorm( N , 0 , 0.02 )
+                                  # combine into data frame
+d <- data.frame(height,leg_left,leg_right)
+
+## R code 8.22
+m5.8s <- map2stan(
+    alist(
+        height ~ dnorm( mu , sigma ) ,
+        mu <- a + bl*leg_left + br*leg_right ,
+        a ~ dnorm( 10 , 100 ) ,
+        bl ~ dnorm( 2 , 10 ) ,
+        br ~ dnorm( 2 , 10 ) ,
+        sigma ~ dcauchy( 0 , 1 )
+    ) ,
+    data=d, chains=4,
+    start=list(a=10,bl=0,br=0,sigma=1))
+
+stancode(m5.8s)
+```
+
+```{r}
+m5.8s2 <- map2stan(
+    alist(
+        height ~ dnorm( mu , sigma ) ,
+        mu <- a + bl*leg_left + br*leg_right ,
+        a ~ dnorm( 10 , 100 ) ,
+        bl ~ dnorm( 2 , 10 ) ,
+        br ~ dnorm( 2 , 10 ) & T[0,] ,
+        sigma ~ dcauchy( 0 , 1 )
+    ) ,
+    data=d, chains=4,
+    start=list(a=10,bl=0,br=0,sigma=1))
+
+stancode(m5.8s2)
+```
+
+```{stan output.var=mh_3_1}
+data{
+    int<lower=1> N;
+    real height[N];
+    real leg_left[N];
+    real leg_right[N];
+}
+parameters{
+    real a;
+    real bl;
+    real br;
+    real<lower=0> sigma;
+}
+model{
+    vector[N] mu;
+    sigma ~ cauchy( 0 , 1 );
+    br ~ normal( 2 , 10 );
+    bl ~ normal( 2 , 10 );
+    a ~ normal( 10 , 100 );
+    for ( i in 1:N ) {
+        mu[i] = a + bl * leg_left[i] + br * leg_right[i];
+    }
+    height ~ normal( mu , sigma );
+}
+generated quantities{
+ vector[N] log_lik;
+  {
+    vector[N] mu;
+    real dev;
+    dev = 0;
+    for ( i in 1:N ) {
+        mu[i] = a + bl * leg_left[i] + br * leg_right[i];
+        log_lik[i] = normal_lpdf(height[i] | mu[i], sigma);
+    }
+    dev = dev + (-2)*normal_lpdf(height | mu , sigma );
+  }
+}
+```
+
+```{stan output.var=mh_3_2}
+data{
+    int<lower=1> N;
+    real height[N];
+    real leg_left[N];
+    real leg_right[N];
+}
+parameters{
+    real a;
+    real bl;
+    real br;
+    real<lower=0> sigma;
+}
+model{
+    vector[N] mu;
+    sigma ~ cauchy( 0 , 1 );
+    br ~ normal( 2 , 10 )T[0, ];
+    bl ~ normal( 2 , 10 );
+    a ~ normal( 10 , 100 );
+    for ( i in 1:N ) {
+        mu[i] = a + bl * leg_left[i] + br * leg_right[i];
+    }
+    height ~ normal( mu , sigma );
+}
+generated quantities{
+ vector[N] log_lik;
+  {
+    vector[N] mu;
+    real dev;
+    dev = 0;
+    for ( i in 1:N ) {
+        mu[i] = a + bl * leg_left[i] + br * leg_right[i];
+        log_lik[i] = normal_lpdf(height[i] | mu[i], sigma);
+    }
+    dev = dev + (-2)*normal_lpdf(height | mu , sigma );
+  }
+}
+```
+
+```{r}
+data_mh3<- list(
+  N = NROW(d),
+  height = d$height,
+  leg_left = d$leg_left,
+  leg_right = d$leg_right
+)
+
+fit_mh_3_1 <- sampling(mh_3_1, data = data_mh3, iter = 2000, chains = 4, cores = 4)
+fit_mh_3_2 <- sampling(mh_3_2, data = data_mh3, iter = 2000, chains = 4, cores = 4)
+
+```
+
+
+```{r}
+fit_mh_3_1
+```
+
+```{r}
+fit_mh_3_2
+```
+
+## 8H4
+```{r warning=FALSE}
+# compare models
+library(loo)
+
+lok_lik_mh_3_1 <- extract_log_lik(fit_mh_3_1, merge_chains = FALSE)
+waic_mh_3_1 <- waic(lok_lik_mh_3_1)
+
+lok_lik_mh_3_2 <- extract_log_lik(fit_mh_3_2, merge_chains = FALSE)
+waic_mh_3_2<- waic(lok_lik_mh_3_2)
+
+compare_models <- compare(waic_mh_3_1, waic_mh_3_2, waic_mh_3_2)
+compare_models
+```

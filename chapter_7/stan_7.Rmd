@@ -154,7 +154,7 @@ rugged
 ```{r}
 # Data Transformations
 
-# Log outcom
+# Log outcome
 rugged$log_gdp <- log(rugged$rgdppc_2000)
 
 # Filter out countries without GDP data
