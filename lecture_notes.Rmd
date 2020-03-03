@@ -340,6 +340,10 @@ Jaynes: Distribution with largest entropy is distribution most consistent with s
 
 Minimises information divergence
 
+Gaussian is the 'flattest' distribution (max entropy) with a constant mean and finite variance
+
+Binomial distribution is maximum entropy distribution for discrete outcoems with a constant expected value. 
+
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
 
@@ -354,6 +358,9 @@ If you do not ask exactly the right question and understand the implications of 
 > So best approximate the answer to the right question which is often vague than an exact answer to the wrong question which can always be made precise.
  
 Information entropy: Two words that we don't understand and we put them together L0724m. BW: Ensembling
+
+Chapter 9 page 286: No regression coefficient in a GLM produces a constant change on the outcome sccale. All predictors now interact with each other (take the partial derivative to see)
+page 288: Parameter estimates in GLMs represents a relative difference on the scale of the linear model, ignoring other parameters. While we are really interested in the absolute differences inthe outcomes that must incorprate all parameters
 
 # Ideas
 Causal inference: Use Information Criteria
