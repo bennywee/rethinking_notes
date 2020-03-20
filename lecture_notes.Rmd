@@ -344,6 +344,78 @@ Gaussian is the 'flattest' distribution (max entropy) with a constant mean and f
 
 Binomial distribution is maximum entropy distribution for discrete outcoems with a constant expected value. 
 
+# Lecture 12
+
+Nearly 95% of models in applied statistics are linear regressions. Always wrong, rarely bested.
+
+Parameters are states of the machine but not the predictions we are interested in. Adjusting the state of machine is required to make good predicrtions. Can't make sense of individiual coefficients when we have interactions. 
+
+Different sets of axioms in mathematics can sometimes lead to the same outcome.
+
+**GLMs**
+
+1) Pick an outcomes distribution
+2) Model parameters with a link
+3) Compute posterior
+
+Histomancy - Picking outcome distributions by looking at the histogram. This is bad.
+
+Use constraints and principles to choose maximum entropy distribution for likelihood.
+
+Mean and outcome have same measurement scale when using a regular linear regression which makes it easy to use and interpret.
+
+For binomial, y is a count and parameter p is on the probability scale. Need to use a link function.
+
+Even if all priors are gaussian, doesn't guarantee posterior is gaussian when using GLMs
+
+Ceiling and floor effects -> parameter values are different depending how close they are to the bottom/top of the constraint. No same constant change on the outcome scale. Effects the marginal impact of the predictors. 
+
+Where you are along the x axis will impact the marginal effect of the predictor on the probability. This is why the entire linaer model remains in the partial derivative.
+
+Binomial -> Mean and variance scale together. In gaussian they are independent. Predictors are linear in log-odds space. Logistic transform brings it to probability space.
+
+Unit change of log odds has a different impact on probability depending on how far away from zero you are since the space gets compacted
+
+Log odds of zero -> Probability = $1/2$ So when linear model is zero, the probability is a coin flip
+
+Log odds = 1 --> p = 0.73
+log odds = 3 -> p = 0.95
+
+Log odds of 4 is pressed up against the ceiling, log odds of -4 is pressed up against the floor
+
+Uniform priors are madness in a logistic regerssion. >4 on the log scale is really high up on probability scale and are almost certain to happen. <-4 is squished towards the floor and are extremely unlikely 
+
+exp(beta) -> proportional change in odds, a relative effect size. It's hard to determine how 'large' this effect size is. It is dependent on where alpha is. If you're close to the ceiling/floor, the marginal impact doesn't really matter.
+
+**Relative effects tend to exaggerate the effect of the predictor**
+
+Relative shark, absolute deer. Deer kill more people yearly. But if you're in the water, the relative threat of the shark is greater.
+
+1/1000 -> 3/1000 ~ 200\% increase in RELATIVE risk, but only 0.2\% change in probability
+
+Logistic function gives output on probability scale.
+
+Sample size within each group matters _a lot_. 
+# Lecture 13
+MLE of GLMs without priors is like driving without a seatbelt. Priors are extremely important.
+
+Remember log odds of 4 is basically certain.
+
+Almost no prediction difference between 4 and 4000. Miniscule difference. The likeilhood function _alone_ cannot tell you what is going on in the data _if_ the effects are strong. Because you hit the floor or ceiling. A reasonable effect size becomes unclear. Likelihood is flat up until infinity and there's no prior. It looks like misbehaviour but it's just programming. Need priors to say that infinity is impossible. 
+
+Prone to overestimating priors.
+
+Start with priors on beta coefficients centred around zero and any values above 5 or 6 very unlikely.
+
+Binomial GLM -> Predict counts with a fixed maximum
+
+Poisson GLM -> E=Var, constant expected value and counts with no upper limit. Multiplicative model due to log link when exponentiating it to raw scale. Although most things can't be exponential forever.
+
+Always look at the predictions of the combinations of interactive variables. High correlation of predictors are misleading when looked at in isolation. The sum may be identified.
+
+Log links -> linear model of magnitude.
+
+
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
 
@@ -361,6 +433,10 @@ Information entropy: Two words that we don't understand and we put them together
 
 Chapter 9 page 286: No regression coefficient in a GLM produces a constant change on the outcome sccale. All predictors now interact with each other (take the partial derivative to see)
 page 288: Parameter estimates in GLMs represents a relative difference on the scale of the linear model, ignoring other parameters. While we are really interested in the absolute differences inthe outcomes that must incorprate all parameters
+
+The goal is to model something you can't see in the table
+
+page 316: You can't just inspaect the marginal uncertainty in each parameter which is shown in a table of estimates and get an accurate understanding of the impact of the _joint_ uncertainty on prediction.
 
 # Ideas
 Causal inference: Use Information Criteria
