@@ -415,6 +415,44 @@ Always look at the predictions of the combinations of interactive variables. Hig
 
 Log links -> linear model of magnitude.
 
+# Lecture 14
+Multilevel models are  the new default.
+
+Fixed effects of anterograde amnesia. No information passed among clusters.
+
+Multilevel models remember and pool information. Properties of clusters come from a 'population'.
+
+If you encounter a new cluster, and you infer about this new cluster _based on information from other clusters_ you should use a multilevel model. Clusters aren't exactly the same, nor are they completely different either.
+
+Multilevel models work by _estimating a prior_. The prior distribution will be learned from the data -- there are two likelihood functions.
+
+Want shrinkage and pooling - trades off overfitting. Uses the _whole sample_.
+
+Gaussian processes extend shrinkage and pooling to continuous variables like age -- not limited to discrete clusters. Ages which are closer together are expected to be similar. GPs let you do pooling with continuous categories.
+
+Multilevel models have _adaptive priors_ which are learned from the data.
+
+Alpha is the average survival rate across tanks (population mean? Population mean is learned from the clusters). 
+Sigma is the variation across tanks on the log odds scale.
+
+Survival across tanks has a distribution. This distribution is the prior for each tank which needs its own prior. 
+
+WAIC is an estimate of the out of sample performance of models. On the relative scale. Big WAIC is worse.
+
+pWAIC: Effective number of parameters, a _peanlty term_. Comes from the "flexibility" of the model. Larger pWAIC suggests that the model is able to fit more 'flexibly'. Too big overfit, too low underfit.
+
+pWAIC is typically lower than the _actual_ number of parameters inthe model. Not always. But it is smaller because we use regularising priors in the model. Parameter count is not a pure measure of model 'flexibility' becuase we use priors to constrain the parameters. Which reduces the overfitting. Flexilibty dependent on the sample too.
+
+MLM -> Add parameters, make the model more complicated, can get worse fit to the data (lower pWAIC), but predict out of sample _better_.
+
+Why fit data worse? Now the estimate for each tank is now pooled to look like the _population_ of tanks. Now it makes _worse_ predictions in sample.
+
+Alpha in MLM is different from a pooled model. It's now the mean of the distribution of the intercepts, not just the mean of the data. It's the _pooling estimator_. In the population of varying tanks, what is the typical tank like? Now there's a lot more uncertainty because it's a different _question_. So the estimation of this question is now vaguer.
+
+If clusters vary a lot, won't get much pooling. It's learned to expect variation between clusters so it won't be surprised by anything extreme. If clusters are similar, any new extreme cluster is learned to be a result of sampling variance, therefore the regulariation and pooling is stronger. MLMs learn the _regular features of the data generating process_
+
+MLMs allow priors to learn from data so you can regularise inferences. Trading off over/under fitting.
+
 
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
@@ -438,9 +476,11 @@ The goal is to model something you can't see in the table
 
 page 316: You can't just inspaect the marginal uncertainty in each parameter which is shown in a table of estimates and get an accurate understanding of the impact of the _joint_ uncertainty on prediction.
 
+Set up the assumptions and let abyesian inference figure out the implication of your assumptions. If the implication of your assumptions do not make sense, then there may be something wrong with your assumptions. Bayesian inference is an extension of true/false logic to continuous logic -- learning from the consequences of our assumptions. Lecture 14 49min.
+
 # Ideas
 Causal inference: Use Information Criteria
 Prediction: Test out of sample
 
 R^2 not useful in either circumstance. Can have good R^2 but misspecified model. Can have bad R^2 but the _correct_ model. 
-In prediction, fit to the sample is _supposed_ to not be good, it's out of sample that matters.
+In prediction, fit to the sample is _supposed_ to not be good, it's out of sample that matters. 
