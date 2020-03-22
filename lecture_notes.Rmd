@@ -454,6 +454,31 @@ If clusters vary a lot, won't get much pooling. It's learned to expect variation
 MLMs allow priors to learn from data so you can regularise inferences. Trading off over/under fitting.
 
 
+# Lecture 15
+Information are shared between clusters _through_ the shared parameters alpha and sigma. Pooling occurs through this joint constraint where alpha and sigma are _learned_ from the clusters.
+
+Less effective parameters -> More "flexible" model? As there's less parameters, less over fitting and can generalise more easily?
+
+Sigma quantifies variation across tanks. Sigma of 0 is completely pooling (all clusters the same) and sigma of infinity is no pooling (fixed effects, unrelated clusters)
+
+Learn regularisation from the data so we don't have to guess.
+
+Posterior distribution contains functions now. Parameters define distributions. Posterior distribution of gaussian distributions.
+
+Synthetic data is a good way of thinking through the problem.
+
+Can do head to head comparison with varying _intercepts_, not with slopes (forest plot). Need to push out predictions for slopes.
+
+7 block intercepts but sigma for blocks was extremely small (most of the block coefficients were close to zero). So the effective number of parameters is not that much higher. Won't overtfit on block if you keep it in the model. 
+
+If you have repeat observations, cluster.
+
+Adding more predictors reduces variation (eats up variation). This should shrink sigma across groups. 
+
+Varying intercepts are disposable, we care about out of sample prediction. i.e predicting NEW clusters. Interested in the second level of the model, the regularising prior. Not the top level parameters.
+Usually don't care about individuals. But want to use varying intercepts for certain groups (countries for example).
+
+Average over distribution of varying effects for new clusters.
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
 
