@@ -1,0 +1,511 @@
+---
+title: "Lecture Notes - Statistical Rethinking"
+author: "Benjamin Wee"
+output: pdf_document
+---
+
+# Lecture 01
+
+Need to understand the internal processes of a model to use them properly. Construction from bottom up.
+
+Your computer is a robot (Golem), it takes in instructions and unfortuantely, it might carry them out. It does exactly what you say, to the letter. Need to understand them to be responsible when building them.
+
+Eventually you will make a statistical model which will misbehave. But it will only misbehave according to your expectations. It is behaving *exactly* according to its design.
+
+Models are blind to the creator's intent, easy to misuse, not even false.
+
+We construct models to do things which are difficult for us. We design them to be good at things we are bad at. But they are fantastically bad at the things people find easy. They are blind to our intentions. 
+
+"Animated by truth"
+
+Frequentist tests are made for experimental designs (or factorial design models?).  
+
+Flasifying null models are insufficient for understanding how the world works.
+
+"Statistical expectation" 
+
+Bayesian inference lays bare all the imperfections of logical inference.
+
+Information critera are a cross validation metric
+
+Anything which looks random to you is because you can't predict the outcome. Ignorance in the face of uncertainty.
+
+Everything in Bayes is pseudo random, there is a deterministic process (probability distributions which produce random numbers). We taught computers to generate pseudo random numbers (we taught them a deterministic way to generate "randomness")
+
+Propositional logic. What is a valid deduction. Bayes extends this to continuous logic.
+
+We want to understand "the golem's belief", not the scientist's.
+
+Bayesian stats -> Laplacian stats. Father of applied stats. Epistemic rather than ontological. Small world, making the best inference we have based on the existing information.
+
+Coins themselves are not random. Our inability to predict their side which makes them random. They are a good randomisation device.
+
+FLipping coins fairly is a chaotic system. So sensitive to initial conditions that they appear unpredictable, and hence randoom.
+
+randomness is a property of bugs in our knowldege.
+
+Based on our assumptions/conjecture, how different ways could we observe the data?
+
+Probability is merely counting the number of ways the data could appear given our conjecture GIVEN all the POSSIBLE paths that could be generated from our conjecture. This is where the multiplication rule of probability comes from. We are multiplying all the possible "paths" of observing the data from our assumptions (an efficient way of counting). 
+
+# Lecture 02
+
+Extension of propositional logic to continuous probability
+
+```{r}
+# Counts to probability
+ways <- c(3 ,8, 9)
+ways/sum(ways)
+```
+
+Probability is just a shortcut for counting probabilties. It cannot tell us what is true, nothing can. It's simply, make some assumptions, and see what the logical consequences are. 
+
+Any particular dataset you observe is vanishingly unlikely.
+
+Applied statistics as a type of engineering. Building a bridge across a river of ignorance. 
+
+*Design > Condition > Evaluate*
+Story of the small world, executing in the small world, does the model make sense? 
+
+Applied statistics, a form of engineering. Where we will be constructing a bridge to get over a river of ignorance.
+
+Translating data story into probabilty statements:
+
+1) Law of Total Probability: Make sure the probabilities sum to 1
+Two to remember to construct things:
+2) Sum rule: Things that are alternative: add
+3) Product rule: Things that happen together: multiply
+
+The prior and posterior are one in the same. The prior summarises all the past datapoints AND the sample size. May want the raw data IF you want to fit a different model. Other models may find other relevant information.
+
+Posterior is the prior of a different model or distribution and every prior is the posterior of some other inference. This is bayesian updating -- continuous learning bsed on the assumptions built into it
+
+Bayesian learning is optimal in our small world. Counting up the logical ways data could arise. 
+
+Ratio of factorials in binomial distribution gives the number of ways the data can appear. Count the different orders you can get all the permutations.
+
+Bayes: Translate a prior state of information (before data arrives) into posterior state of information (after data arrives)
+
+Prior: We have prior counts of the plausibilities of each conjecture (e.g. philosophy or previous data). 
+
+Prior: assigning information states. Joint prior over data and parameters. 
+
+Prior predictive distribution: Idea of simulated dataset. Terrible predictions before you got data. **This is the way to know what the prior actually means**. *It is the expectation of the dataset before you see the data*
+
+Posterior predictive distribution: hopefully better predictions after data is observed. Good way to test what the golem thinks its learned from the data.
+
+Density: "Rate of change" -- It's continuous. Relative values matters, not absolute.
+
+Overfitting - Need to build in conservatism into golems. Otherwise it will think the sample is "everything"
+
+Prior as a state of information, there's no "true" prior. Important to embody your golem with information it to guard against *inferential risk*. Truth isn't what's relevant here. It's the risk of taking action from the model that matters.
+
+$$
+Posterior = \frac{Likelihood \times prior}{Average\space Likelihood}
+$$
+
+Where the average likelihood normalises the posterior so that it integrates to 1. The posterior is the *standardised product of the likelihood and proior
+
+
+# Lecture 03
+"Just because your model makes accurate predictions, does not mean it is right." - They're not even wrong. They're descriptions and useful. 
+
+Linear regression is descriptive of how the mean is conditional on variables we know. Does necessarily model the natural process. They are *descriptively accurate* and a good *general method of approximation.*
+
+Gaussian as a model of error.
+
+Gaussian distribution is the *most conservative*. Spreads probabilitly the most *flatly* for a given mean and variance.
+
+Adding fluctuations -> Gaussian, preserves mean and variance. Symmetry arises from the addition process. 
+
+Gaussian is the most conservative asumption if we assume finite variance and most conservative distribution.
+
+_'Learn strategy, not procedure'_
+
+Language for modeling
+
+1) What are the outcomes?
+2) How are the outcomes contrained (what is the likelihood)?
+3) What are the predictiors, if any
+4) How do predictors relate to likelihood
+5) What are the priors?
+
+Prior predictive distrbutions. What does the model think before it see the data.
+
+Posterior distribution is the relative count of all the ways the data (we have) can happen conditional on the different combination of parameter values
+
+Margins of distributions -> Looking at the side of the hill.
+
+Statistical models are descriptive and not causal. Don't get these two mixed up.
+
+Sampling is an epistomoligcal device to characterise uncertainty around our estimates. Not a physical assumption. Posterior do not "exist", they're a epistological tool.
+
+# Lecture 04
+Characterising uncertainty:
+
+1) Sample from posterior
+2) Use samples to generate predictions that 'integrate over uncertainty'
+
+Anything that depends on the posterior distribution is also a distribution
+
+Consider using median when the posterior distribution is skewed.
+
+Reporting results from a model is different from using a model to make a _decision_. 
+
+Uncertainty from posterior (of some parameter, e.g. my) and uncertainty from likelihood gives the distribution of predicted $y$
+
+Uncertainty around the expectation, uncertainty around realised dependent variable.
+
+Interested in the shape of the interval *not* the boundaries.
+
+Use prime intervals. Braek convention of 95\%
+
+Continuous reduction in plausibility the more we extend out.
+
+Linear models are not linear in the prediction space. It's about the additiveness of the model and the mean. 
+
+...descriptively accurate to an arbitrary standard
+
+Best paraobla go fit if you tell the computer to fit a porabola. Can swing wildly in small samples.
+
+
+
+# Lecture 05
+The causal terror - when variables which are not obviously spurious but really are. Can NOT determine causality alone with data
+
+Adding variables can induce spurious correlations.
+
+People tend to exaggerate the power of statistical methods
+
+Statitsics provides a structured analytical system to clearly communicate what you've done. It does not solve *the* (inference) problem (nothing really does). It solves *communication* problems and *computational* problems.
+
+Causation does not imply correlation. There are complex systems (non linear relationships, delayed feedback mechanisms) which mean causal related variables may exhibit no correlation. Unless you look at it in exactly the right way when revealed by a model how a system works. That is why you need theory. 
+
+Need a model of the system so you know what kind of association to look for.
+
+Zero is a natural inflection point. There can be still an effect even if the interval crosses zero. Do not cave in to conventional superstitions that you should ignore variables because of this and assume that there is no effect 
+
+Residual is not data, residual is a parameter, it's dependent on the posterior distribution.
+
+Goal is not to get a perfect retrodiction of your sample. It's supposed to help you identify areas the model performed badly in so it gives you a way forward + think about what's wrong. 
+
+# Lecture 06
+If the model is not exactly retrodicting, it does not mean something is wrong.
+The whole point of multilevel model is that they **don't** fit the sample perfectly well. As a consequence they make better predictions out of sample. You expect them to make a pattern of mis retrodiction on the sample which is a feature not a bug.
+
+Could have large effects which are spurious, beware of putting all the variables into your model.
+
+If you do not ask exactly the right question and understand the implications of your question in a precise way, the problem is the model will answer it _exactly. And that answer will burn your kingdom to the ground. So best approximate the answer to the right question which is often vague than an exact answer to the wrong question which can always be made precise.
+
+Can have lots of powerful ML algorithms with lots of variables but it does not help us understand how the underlying system _works_. Not about predictions, it's about understanding and interpretability
+
+"The question you answered isn't exactly the one you really wanted to ask"
+
+If you see variables with very wide porterior intervals, consider plotting them and seeing if there is any mutual information or multicollinearity.
+
+Post treatment bias - Controlling for consequence of treatment statistically knocks out treatment. Don't want to control for consequences of the treatment otherwise we can isolate the treatment effect. The mediator or consequence exists *because* of the treatment effect.
+Understanding *how* the treatment worked through mediators requires separate models
+
+If there's something caused by two variables and you control for it, you are looking at a subset -- you are inducing a statistical selection bias on the cases that is informing you about the relationship of the two other variables
+
+Treatments effect a bunch of variables at once, so need to think carefully about what that means.
+
+You always need theories about the systems to solve the issues. Mere associations won't do it.
+
+
+# Lecture 07
+Can't use ochham's razor in most realistic circumstances. Rarely will we compare models that make the _exact_ same predictions. Rather, we have to make a choice between _tradeoffs_. Some model fits the data better but it's much more complicated. We need a way of managing that tradeoff of fit and complexity or fit and prediction.
+
+Overfitting encodes the sample that we have into the model.
+
+Information: Reduction in uncertainty caused by learning an outcome
+
+You understand the winning model better when you _compare_ and _understand_ why the other models performed worse relative to it. Don't discard, use all the information. 
+
+# Lecture 08
+A lot of real life inference/prediction problems or learnings don't allow us to train and then test out of sample. Some decision problems require gathering data as you learn. 
+
+Prequential analysis - Data collection strategy is mixed in with the estimation strategy. Data collection is guided by what we just learned. 
+
+'Prequential experimental design'
+
+Actual parameters vs effective number of parameters.
+Parameters all have different relationships to one another
+ 
+Not all parameters have direct relationships to prediction — they have to pass through other parameters
+ 
+Measuring the quantitative distances. Not about 'which model is the best'. We learn more from _comparing_ models and inspecting their differences by their relative distances.
+ 
+ Never average parameters. Only average and ensemble predictions. Information criteria are measured on the prediction scale.
+ 
+ You understand the winning model _better_ when you understand the other models relative to it
+ 
+ dSE -> Standard error of the DIFFERENCE in the distributions of WAICs.
+ 
+ WAICs have SEs and therefore an expected sampling distribution of WAIC implied by the model. 
+ 
+ Comparing two different models: there are two distributions for WAIC and those distributions are _correlated_
+ 
+ Since they are correlated, the distribution of their difference is NOT the same as the difference in their distributions
+ 
+ Don't look at the overlap of SE bars and infer whether two models are different from one another. In any statistical model comparison, you do NOT just look at the overlap in error bars. This is irrelevant to the question or whether the estimates are different from one another.
+ 
+ If dSE crosses zero, might suggest distributions in WAIC overlap
+ 
+ Visualise parameter distributions across models to identify masking effects
+ 
+ Irreconcilable differences in the structure of their models -> average their predictions together.
+ 
+ NEVER average parameter estimates
+ 
+ WAIC is measured on prediction space so its okay to average predictions. Predictions is what the information criteria is judging on.
+ 
+ Only looking at top model under calibrates the risk. Ensemble model does not sweep anything under the rug.
+ 
+
+# Lecture 09
+We're mislead because our sample is _conditional_ on something, it's a subset or subsample of the population
+
+Splitting data is a bad idea -- does not pool information. Model does not learn from the whole sample.
+
+Dummy variables _only_ shifts the intercepts and gives the same slope
+ 
+Don't interpret coefficients. Interactions now rely on more than one parameters. Need to compute the total slope.
+ 
+Look at the distribution of their difference.
+
+Always include all the dummy variables, otherwise you understate uncertainty (i.e get rid of the alpha intercept term)
+
+# Lecture 10
+Convergence to target distribution. That's the objective.
+
+Need MCMC because can't integrate posterior distribution
+
+Maximisation is not a good strategy in high dimensions -- must have full distribution. **In high dimensional probability distributions, most of the probability mass is not at the maximum.** This is counterintuitive. It is not near the mode. Concentration of measure. Need the _typical set_ -- where the mass is. 
+
+Can't describe posterior from its peak. Max or min does not work in complex systems. 
+
+Mode at the centre of the doughnut distribution.
+
+Gibbs sampling inefficient when models have lots of parameters because they are usually highly correlated.
+
+Log of gaussian pdf gives a parabolic bowel. Since a gaussian distribution is an exponentiated porabola.
+
+Can tune HMC by hand if it loops around and eats its own tail (resulting in correlated samples since it ends up where it started)-- leap frog steps tuning. Hard to do in high dimensions.
+
+No u-turn sampler Can simulate in both directions -- means you don't have to tune the number of leap frog steps. Tries to figure out when it's turning around.
+
+Latent variable models - multiple factors --> Results in multimodel distributions. Anything with labelling. 
+
+# Lecture 11
+
+## MCMC
+
+**Check the chain** -- traceplot
+
+Warmup adapts the step size, fundamentally different from burn in. Figuring out how to efficiently explore this target. It's trying out proposals and tuning the acceptance weight.
+
+There's always a little bit of autocorrelation in the samples. The  paths aren't completely independent of each other since there is a destination and origin. Redundant information in the sequential sample. 
+
+n_eff: Calculated by looking at the correlation between subsequent samples and does a statistical adjustment to say effectively statistically speaking: if we had a chain where subsequent samples were perfectly uncorrelated with one another, how long would that chain be before it gave you the same information as this one. 
+
+Imagine a chain where each subsequent sample is perfectly incorrelated with the previous sample (never happens). Say you run that chain 200 time steps. When you see n_eff 200 on a real stand chain, that means that's how long the analogous uncorrelated change would need to have been run. It's a comparison measure to the 'perfect chain'. Gives an idea of the inefficiency of the chain in terms of information. 
+
+Be alarmed if: n_eff/n<1
+
+R-hat: An f-statistic, a ratio of variances. There is variation _within_ each chain and variance _between_ chains. As the chains run long, you want to variance between chains to be the same as the variance between chains. This should be the case since the chains are being drawn from the same target distribution.
+If Rhat is slightly greater than 1, trying running chain longer.
+
+**Both rhat and n_eff could look fine but the chain still awful**
+
+Flat priors mean flat for infinity. So the frictionless bowel will go out to infinity and thus the particle will seek infinity. Set a prior that rules out infinity.
+
+MH looks like a random walk even when its working. It won't take wild samples but it doesn't mean you're getting the right inferences. 
+
+When chain is broken, warmup is real slow (which is a good sign that something is wrong)b . Check expression tree in stan manual.
+
+If chains not mixing, check if number of parameters matches number of priors.
+
+## Entropy
+
+Philosophical justification for a set of common choices. One of many ways to justify choices in GLM.
+
+Conservative choices (least assumptions) for choosing likelihood functions.
+
+Why is safe flat, why is that more conservative, why is it more plausible? There are vastly more ways to get even distributions. Whatever happens is more likely to have that shape. 
+
+Information entropy: The formula for entropy falls out of the normalised counts of unique arrangements that give a distribution. Information entropy gives us a way to compare relative plausibilities of different distributions - the numer of unique arrangements given.
+
+Jaynes: Distribution with largest entropy is distribution most consistent with stated assumptions (can happen the largest number of ways). 
+
+Minimises information divergence
+
+Gaussian is the 'flattest' distribution (max entropy) with a constant mean and finite variance
+
+Binomial distribution is maximum entropy distribution for discrete outcoems with a constant expected value. 
+
+# Lecture 12
+
+Nearly 95% of models in applied statistics are linear regressions. Always wrong, rarely bested.
+
+Parameters are states of the machine but not the predictions we are interested in. Adjusting the state of machine is required to make good predicrtions. Can't make sense of individiual coefficients when we have interactions. 
+
+Different sets of axioms in mathematics can sometimes lead to the same outcome.
+
+**GLMs**
+
+1) Pick an outcomes distribution
+2) Model parameters with a link
+3) Compute posterior
+
+Histomancy - Picking outcome distributions by looking at the histogram. This is bad.
+
+Use constraints and principles to choose maximum entropy distribution for likelihood.
+
+Mean and outcome have same measurement scale when using a regular linear regression which makes it easy to use and interpret.
+
+For binomial, y is a count and parameter p is on the probability scale. Need to use a link function.
+
+Even if all priors are gaussian, doesn't guarantee posterior is gaussian when using GLMs
+
+Ceiling and floor effects -> parameter values are different depending how close they are to the bottom/top of the constraint. No same constant change on the outcome scale. Effects the marginal impact of the predictors. 
+
+Where you are along the x axis will impact the marginal effect of the predictor on the probability. This is why the entire linaer model remains in the partial derivative.
+
+Binomial -> Mean and variance scale together. In gaussian they are independent. Predictors are linear in log-odds space. Logistic transform brings it to probability space.
+
+Unit change of log odds has a different impact on probability depending on how far away from zero you are since the space gets compacted
+
+Log odds of zero -> Probability = $1/2$ So when linear model is zero, the probability is a coin flip
+
+Log odds = 1 --> p = 0.73
+log odds = 3 -> p = 0.95
+
+Log odds of 4 is pressed up against the ceiling, log odds of -4 is pressed up against the floor
+
+Uniform priors are madness in a logistic regerssion. >4 on the log scale is really high up on probability scale and are almost certain to happen. <-4 is squished towards the floor and are extremely unlikely 
+
+exp(beta) -> proportional change in odds, a relative effect size. It's hard to determine how 'large' this effect size is. It is dependent on where alpha is. If you're close to the ceiling/floor, the marginal impact doesn't really matter.
+
+**Relative effects tend to exaggerate the effect of the predictor**
+
+Relative shark, absolute deer. Deer kill more people yearly. But if you're in the water, the relative threat of the shark is greater.
+
+1/1000 -> 3/1000 ~ 200\% increase in RELATIVE risk, but only 0.2\% change in probability
+
+Logistic function gives output on probability scale.
+
+Sample size within each group matters _a lot_. 
+# Lecture 13
+MLE of GLMs without priors is like driving without a seatbelt. Priors are extremely important.
+
+Remember log odds of 4 is basically certain.
+
+Almost no prediction difference between 4 and 4000. Miniscule difference. The likeilhood function _alone_ cannot tell you what is going on in the data _if_ the effects are strong. Because you hit the floor or ceiling. A reasonable effect size becomes unclear. Likelihood is flat up until infinity and there's no prior. It looks like misbehaviour but it's just programming. Need priors to say that infinity is impossible. 
+
+Prone to overestimating priors.
+
+Start with priors on beta coefficients centred around zero and any values above 5 or 6 very unlikely.
+
+Binomial GLM -> Predict counts with a fixed maximum
+
+Poisson GLM -> E=Var, constant expected value and counts with no upper limit. Multiplicative model due to log link when exponentiating it to raw scale. Although most things can't be exponential forever.
+
+Always look at the predictions of the combinations of interactive variables. High correlation of predictors are misleading when looked at in isolation. The sum may be identified.
+
+Log links -> linear model of magnitude.
+
+# Lecture 14
+Multilevel models are  the new default.
+
+Fixed effects of anterograde amnesia. No information passed among clusters.
+
+Multilevel models remember and pool information. Properties of clusters come from a 'population'.
+
+If you encounter a new cluster, and you infer about this new cluster _based on information from other clusters_ you should use a multilevel model. Clusters aren't exactly the same, nor are they completely different either.
+
+Multilevel models work by _estimating a prior_. The prior distribution will be learned from the data -- there are two likelihood functions.
+
+Want shrinkage and pooling - trades off overfitting. Uses the _whole sample_.
+
+Gaussian processes extend shrinkage and pooling to continuous variables like age -- not limited to discrete clusters. Ages which are closer together are expected to be similar. GPs let you do pooling with continuous categories.
+
+Multilevel models have _adaptive priors_ which are learned from the data.
+
+Alpha is the average survival rate across tanks (population mean? Population mean is learned from the clusters). 
+Sigma is the variation across tanks on the log odds scale.
+
+Survival across tanks has a distribution. This distribution is the prior for each tank which needs its own prior. 
+
+WAIC is an estimate of the out of sample performance of models. On the relative scale. Big WAIC is worse.
+
+pWAIC: Effective number of parameters, a _peanlty term_. Comes from the "flexibility" of the model. Larger pWAIC suggests that the model is able to fit more 'flexibly'. Too big overfit, too low underfit.
+
+pWAIC is typically lower than the _actual_ number of parameters inthe model. Not always. But it is smaller because we use regularising priors in the model. Parameter count is not a pure measure of model 'flexibility' becuase we use priors to constrain the parameters. Which reduces the overfitting. Flexilibty dependent on the sample too.
+
+MLM -> Add parameters, make the model more complicated, can get worse fit to the data (lower pWAIC), but predict out of sample _better_.
+
+Why fit data worse? Now the estimate for each tank is now pooled to look like the _population_ of tanks. Now it makes _worse_ predictions in sample.
+
+Alpha in MLM is different from a pooled model. It's now the mean of the distribution of the intercepts, not just the mean of the data. It's the _pooling estimator_. In the population of varying tanks, what is the typical tank like? Now there's a lot more uncertainty because it's a different _question_. So the estimation of this question is now vaguer.
+
+If clusters vary a lot, won't get much pooling. It's learned to expect variation between clusters so it won't be surprised by anything extreme. If clusters are similar, any new extreme cluster is learned to be a result of sampling variance, therefore the regulariation and pooling is stronger. MLMs learn the _regular features of the data generating process_
+
+MLMs allow priors to learn from data so you can regularise inferences. Trading off over/under fitting.
+
+
+# Lecture 15
+Information are shared between clusters _through_ the shared parameters alpha and sigma. Pooling occurs through this joint constraint where alpha and sigma are _learned_ from the clusters.
+
+Less effective parameters -> More "flexible" model? As there's less parameters, less over fitting and can generalise more easily?
+
+Sigma quantifies variation across tanks. Sigma of 0 is completely pooling (all clusters the same) and sigma of infinity is no pooling (fixed effects, unrelated clusters)
+
+Learn regularisation from the data so we don't have to guess.
+
+Posterior distribution contains functions now. Parameters define distributions. Posterior distribution of gaussian distributions.
+
+Synthetic data is a good way of thinking through the problem.
+
+Can do head to head comparison with varying _intercepts_, not with slopes (forest plot). Need to push out predictions for slopes.
+
+7 block intercepts but sigma for blocks was extremely small (most of the block coefficients were close to zero). So the effective number of parameters is not that much higher. Won't overtfit on block if you keep it in the model. 
+
+If you have repeat observations, cluster.
+
+Adding more predictors reduces variation (eats up variation). This should shrink sigma across groups. 
+
+Varying intercepts are disposable, we care about out of sample prediction. i.e predicting NEW clusters. Interested in the second level of the model, the regularising prior. Not the top level parameters.
+Usually don't care about individuals. But want to use varying intercepts for certain groups (countries for example).
+
+Average over distribution of varying effects for new clusters.
+# Quotes
+_'Learn strategy, not procedure'_ L03 19mins
+
+We laugh because the alternative is to cry L04 47 mins
+
+Causation does not imply correlation. There are complex systems (non linear relationships, delayed feedback mechanisms) which mean causal related variables may exhibit no correlation. Unless you look at it in exactly the right way when revealed by a model how a system works. That is why we need theory. L05 10mins
+
+Zero is a natural inflection point. There can be still an effect even if the interval crosses zero. Do not cave in to conventional superstitions that you should ignore variables because of this and assume that there is no effect 
+ L05 25 mins
+ 
+If you do not ask exactly the right question and understand the implications of your question in a precise way, the problem is the model will answer it _exactly. And that answer will burn your kingdom to the ground.  L06 28 mins
+> So best approximate the answer to the right question which is often vague than an exact answer to the wrong question which can always be made precise.
+ 
+Information entropy: Two words that we don't understand and we put them together L0724m. BW: Ensembling
+
+Chapter 9 page 286: No regression coefficient in a GLM produces a constant change on the outcome sccale. All predictors now interact with each other (take the partial derivative to see)
+page 288: Parameter estimates in GLMs represents a relative difference on the scale of the linear model, ignoring other parameters. While we are really interested in the absolute differences inthe outcomes that must incorprate all parameters
+
+The goal is to model something you can't see in the table
+
+page 316: You can't just inspaect the marginal uncertainty in each parameter which is shown in a table of estimates and get an accurate understanding of the impact of the _joint_ uncertainty on prediction.
+
+Set up the assumptions and let abyesian inference figure out the implication of your assumptions. If the implication of your assumptions do not make sense, then there may be something wrong with your assumptions. Bayesian inference is an extension of true/false logic to continuous logic -- learning from the consequences of our assumptions. Lecture 14 49min.
+
+# Ideas
+Causal inference: Use Information Criteria
+Prediction: Test out of sample
+
+R^2 not useful in either circumstance. Can have good R^2 but misspecified model. Can have bad R^2 but the _correct_ model. 
+In prediction, fit to the sample is _supposed_ to not be good, it's out of sample that matters. 
