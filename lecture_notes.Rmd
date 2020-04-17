@@ -479,6 +479,32 @@ Varying intercepts are disposable, we care about out of sample prediction. i.e p
 Usually don't care about individuals. But want to use varying intercepts for certain groups (countries for example).
 
 Average over distribution of varying effects for new clusters.
+
+
+# Lecture 16
+Change the intercept, change the slope. They tend to covary
+
+If average can vary across clusters, some treatment can also vary across clusters.
+
+Could have an average effect of predictor close to zero, but a lot of variation between units of the predictor which means you don't want to ignore it. For some units, there may be a big effect.
+
+Cafe example. If average wait time approaches zero, the slope _must_ get smaller. This creates a correlation. This is a routine phenomenon in linear models that slopes and intercepts must covary, as a result of the physical measures being studied.
+
+Since intercepts and slopes are correlated, we can pool _across_ the parameters as well. 
+Use the correlation between intercepts and slopes in the population of cafes to make better predictions. You have a prediction for the afternoon based on the data from the morning, since you know about their correlation (after estimatin cafe a to m) 
+
+Extra parameter to estimate, the correlation (rho)
+
+**Don't** use independent beta priors in the correlation matrix. All correlation parameters in this matrix are jointly constraining one another. If one parameter is really big, it constrains the value of all the others.
+
+LKJ ~ Onion prior, Generally use etas above 1 regularise so it is skeptical of extreme values. 
+
+Harder to estimate slopes and regularisation is more important.
+
+Cafe - If the estimated slope is too high, the estimated intercept is too low (negatively correlated)
+
+Multiple clusters - only get pooling across types within clusters, not _across_ clusters. Learning about experimental blocks does not tell you anything about chimpanzees and vice versa. But learning about a type of chimpanzee will tell you more about other kinds of chimpanzees.
+
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
 
