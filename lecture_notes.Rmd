@@ -488,7 +488,7 @@ If average can vary across clusters, some treatment can also vary across cluster
 
 Could have an average effect of predictor close to zero, but a lot of variation between units of the predictor which means you don't want to ignore it. For some units, there may be a big effect.
 
-Cafe example. If average wait time approaches zero, the slope _must_ get smaller. This creates a correlation. This is a routine phenomenon in linear models that slopes and intercepts must covary, as a result of the physical measures being studied.
+Cafe example. If average wait time approaches zero, the slope _must_ get git smaller. This creates a correlation. This is a routine phenomenon in linear models that slopes and intercepts must covary, as a result of the physical measures being studied.
 
 Since intercepts and slopes are correlated, we can pool _across_ the parameters as well. 
 Use the correlation between intercepts and slopes in the population of cafes to make better predictions. You have a prediction for the afternoon based on the data from the morning, since you know about their correlation (after estimatin cafe a to m) 
@@ -504,6 +504,43 @@ Harder to estimate slopes and regularisation is more important.
 Cafe - If the estimated slope is too high, the estimated intercept is too low (negatively correlated)
 
 Multiple clusters - only get pooling across types within clusters, not _across_ clusters. Learning about experimental blocks does not tell you anything about chimpanzees and vice versa. But learning about a type of chimpanzee will tell you more about other kinds of chimpanzees.
+
+# Lecture 17
+Covariance matrix allows for pooling between intercepts and slopes. Partial pooling ~ random effects. 
+
+Standard deviations describe slope and intercept variation *between* departments or clusters. 
+
+There is some average correlation actoss departments. 
+
+Correlation (rho) < 0 expect inverse relationship between intercepts and slopes. I.e high intercept low slope and vice versa.
+
+Correlation between departments is low. The sample size at the second level, the department level, is low, so there is not a lot of information to estimate a correlation.
+
+It is common for a mix of powers between levels in a multilevel model. Some levels have low power others have high.
+
+Science is about what the data says conditional on the model, not having confident predictions. 
+
+Cross classified: More than one cluster. 
+
+Average effects and offsets within each cluster. Three effects per cluster type
+
+Major limit is not code, it's what you don't undestand.
+
+High reugulairsation. Number of actial parameters don't describe overfitting risk because of priors. Priors will shrink paramters to zero if the sigma (variation between clusters) is small. 
+
+Non centered -> Factor our parameters out of the priors and into the model
+
+HMC -> Works best when all parametrs are N(0,1). Refactor priors so that this is approximate. 
+
+Calculate std of mean centred values. Now std of column is 1. Need to put scale back into linear model. 
+
+Can drop varying effects with tiny sigmas.
+
+Don't let the statistician drive. Let the science drive.
+
+Continuous categories -> Repeat observations. E.g. age. It is similar to other ages. It's a proxy for a category. Can't cluster by age. Otherwise you throw away information that ages closer to each other are similar in prior expectation. Want to put that information in the prior.
+
+Sensitive window of nearing voting age and existing party in power. 
 
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
@@ -528,6 +565,9 @@ The goal is to model something you can't see in the table
 page 316: You can't just inspaect the marginal uncertainty in each parameter which is shown in a table of estimates and get an accurate understanding of the impact of the _joint_ uncertainty on prediction.
 
 Set up the assumptions and let abyesian inference figure out the implication of your assumptions. If the implication of your assumptions do not make sense, then there may be something wrong with your assumptions. Bayesian inference is an extension of true/false logic to continuous logic -- learning from the consequences of our assumptions. Lecture 14 49min.
+
+High reugulairsation in multilevel model. Number of actial parameters don't describe overfitting risk because of priors. Priors will shrink paramters to zero if the sigma (variation between clusters) is small. 24 mins lecture 17
+
 
 # Ideas
 Causal inference: Use Information Criteria
