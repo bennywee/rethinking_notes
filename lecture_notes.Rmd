@@ -542,6 +542,48 @@ Continuous categories -> Repeat observations. E.g. age. It is similar to other a
 
 Sensitive window of nearing voting age and existing party in power. 
 
+# Lecture 19
+Logical consequences of your assumptions. 
+
+If you don't observe, you must infer -- get samples instead.
+
+The difference between data and parameter is whether a variable is observed or unobserved. This is inferred from the implications of the model
+
+The distinction isn't important until you observe it. It affects how you set up your MCMC and calculations.
+
+Likelihood is a prior for data. It's the distribution assignment to an observed variable. Prior is a distribution assignment to an unobserved variable. They look the same in the model _until_ you know what is and isn't observed. 
+
+Model doesn't know how to pool if the beta is close to zero (no strong association). So not much pooling. 
+
+# Lecture 20
+Unobserved variables are parameters. Missing data is a parameter.
+
+Replacing missing value with mean is bad. Model can't distinguish the difference between data and imputation. Thinks imputation is data and derives incorrect relationship between variables. Model doesn't know you're pretending.
+
+Complete cases make sense _if_ missing at random. But you are throwing away information in the populated columns of the row that has a missing value.
+
+Missing completely at random (MCAR) - The best guess of each missing value is from the posterior distribution derived from remaining data. Place a unique parameter for each missing value. Everything that is observed gets data, everything unobserved (like missing data), gets a parameter - bayes don't care. What's the prior? - The likelihood (when observed), they are the same. It's just a distribution.
+
+Missing values aren't the same because they're in the linear model. They're multiplied by their coefficient. The values of the other variables inform what the missing value imputation is -- what values are more likely conditional on the model.
+
+Information flows both ways. Imputed values can change what you believe about the relationship before you put them in there. Counterintuitive.
+
+Violations of our intuition are an opportunity to learn something.
+
+The univerise is hostile to humans learning. So the point of pedagogy is to make the universe benign so you can learn something from it.
+
+# Recap
+
+Golems - good intentions gone wry.
+
+Models always do something badly - this is an opportunity to learn 
+
+Likelihood - Model assumes that the _residuals_ follow some distribution, not the whole variable. Residuals after model is fit. You can't see this before you fit the model.
+
+Statistics is there to quantify uncertainty, not to remove it. 
+
+There is no right, only less wrong (all models are wrong)
+
 # Quotes
 _'Learn strategy, not procedure'_ L03 19mins
 
